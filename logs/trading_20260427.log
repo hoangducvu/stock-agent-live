@@ -1,0 +1,48 @@
+2026-04-27 07:56:34 [INFO    ] Daily start value: $100,000.00
+2026-04-27 07:56:34 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 07:56:35 [DEBUG   ]   AAPL: 401 5m bars, 48 daily bars
+2026-04-27 07:56:35 [DEBUG   ]   MSFT: 427 5m bars, 48 daily bars
+2026-04-27 07:56:35 [DEBUG   ]   GOOGL: 400 5m bars, 48 daily bars
+2026-04-27 07:56:36 [DEBUG   ]   AMZN: 392 5m bars, 48 daily bars
+2026-04-27 07:56:36 [DEBUG   ]   NVDA: 419 5m bars, 48 daily bars
+2026-04-27 07:56:36 [DEBUG   ]   META: 397 5m bars, 48 daily bars
+2026-04-27 07:56:37 [DEBUG   ]   TSLA: 435 5m bars, 48 daily bars
+2026-04-27 07:56:37 [DEBUG   ]   AMD: 421 5m bars, 48 daily bars
+2026-04-27 07:56:37 [DEBUG   ]   INTC: 417 5m bars, 48 daily bars
+2026-04-27 07:56:38 [DEBUG   ]   BAC: 393 5m bars, 48 daily bars
+2026-04-27 07:56:38 [DEBUG   ]   F: 390 5m bars, 48 daily bars
+2026-04-27 07:56:38 [DEBUG   ]   PLTR: 400 5m bars, 48 daily bars
+2026-04-27 07:56:38 [DEBUG   ]   SOFI: 403 5m bars, 48 daily bars
+2026-04-27 07:56:39 [DEBUG   ]   SNAP: 403 5m bars, 48 daily bars
+2026-04-27 07:56:39 [DEBUG   ]   NIO: 411 5m bars, 48 daily bars
+2026-04-27 07:56:39 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-27 07:56:39 [INFO    ] Gaps calculated for 0 symbols. Notable: none > 1%
+2026-04-27 07:57:01 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-27 07:57:01 [INFO    ] All pending orders cancelled
+2026-04-27 07:57:01 [WARNING ] CLOSING ALL POSITIONS
+2026-04-27 07:57:02 [INFO    ]   All open orders cancelled
+2026-04-27 07:57:02 [INFO    ] === END OF DAY SUMMARY ===
+2026-04-27 12:38:02 [INFO    ] Daily start value: $100,000.00
+2026-04-27 12:38:02 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 12:38:03 [DEBUG   ]   AAPL: 401 5m bars, 48 daily bars
+2026-04-27 12:38:03 [DEBUG   ]   MSFT: 427 5m bars, 48 daily bars
+2026-04-27 12:38:04 [DEBUG   ]   GOOGL: 400 5m bars, 48 daily bars
+2026-04-27 12:38:04 [DEBUG   ]   AMZN: 392 5m bars, 48 daily bars
+2026-04-27 12:38:05 [DEBUG   ]   NVDA: 419 5m bars, 48 daily bars
+2026-04-27 12:38:05 [DEBUG   ]   META: 397 5m bars, 48 daily bars
+2026-04-27 12:38:06 [DEBUG   ]   TSLA: 435 5m bars, 48 daily bars
+2026-04-27 12:38:06 [DEBUG   ]   AMD: 421 5m bars, 48 daily bars
+2026-04-27 12:38:07 [DEBUG   ]   INTC: 417 5m bars, 48 daily bars
+2026-04-27 12:38:07 [DEBUG   ]   BAC: 393 5m bars, 48 daily bars
+2026-04-27 12:38:07 [DEBUG   ]   F: 390 5m bars, 48 daily bars
+2026-04-27 12:38:08 [DEBUG   ]   PLTR: 400 5m bars, 48 daily bars
+2026-04-27 12:38:08 [DEBUG   ]   SOFI: 403 5m bars, 48 daily bars
+2026-04-27 12:38:08 [DEBUG   ]   SNAP: 403 5m bars, 48 daily bars
+2026-04-27 12:38:09 [DEBUG   ]   NIO: 411 5m bars, 48 daily bars
+2026-04-27 12:38:09 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-27 12:38:09 [INFO    ] Gaps calculated for 0 symbols. Notable: none > 1%
+2026-04-27 17:10:00 [DEBUG   ] === TRADING TICK 11:10:00 ===
+2026-04-27 17:10:15 [DEBUG   ]   Got 15 new bars
+2026-04-27 17:15:00 [DEBUG   ] === TRADING TICK 11:15:00 ===
+2026-04-27 17:20:00 [DEBUG   ] === TRADING TICK 11:20:00 ===
+2026-04-27 17:25:00 [DEBUG   ] === TRADING TICK 11:25:00 ===

@@ -1,0 +1,24 @@
+# Stock Trading Bot — runs 24/7
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy bot source
+COPY main.py config.py env_loader.py logger_setup.py \
+     account_manager.py risk_manager.py order_manager.py \
+     data_feed.py indicators.py explainer.py \
+     slack_controller.py \
+     strategy_ema_vwap.py strategy_orb.py strategy_rsi.py \
+     utils.py ./
+
+# Create data/logs dirs
+RUN mkdir -p data logs
+
+# Copy existing state if present
+COPY data/ data/
+
+CMD ["python", "-u", "main.py"]

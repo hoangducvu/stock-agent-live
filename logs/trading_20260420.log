@@ -1,0 +1,208 @@
+2026-04-20 14:00:33 [ERROR   ] Failed to fetch account: request is not authorized
+2026-04-20 14:03:11 [INFO    ] Daily start value: $100,000.00
+2026-04-20 14:03:11 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 14:03:12 [DEBUG   ]   AAPL: 396 5m bars, 48 daily bars
+2026-04-20 14:03:12 [DEBUG   ]   MSFT: 423 5m bars, 48 daily bars
+2026-04-20 14:03:12 [DEBUG   ]   GOOGL: 393 5m bars, 48 daily bars
+2026-04-20 14:03:13 [DEBUG   ]   AMZN: 394 5m bars, 48 daily bars
+2026-04-20 14:03:13 [DEBUG   ]   NVDA: 428 5m bars, 48 daily bars
+2026-04-20 14:03:13 [DEBUG   ]   META: 401 5m bars, 48 daily bars
+2026-04-20 14:03:14 [DEBUG   ]   TSLA: 420 5m bars, 48 daily bars
+2026-04-20 14:03:14 [DEBUG   ]   AMD: 395 5m bars, 48 daily bars
+2026-04-20 14:03:14 [DEBUG   ]   INTC: 394 5m bars, 48 daily bars
+2026-04-20 14:03:14 [DEBUG   ]   BAC: 395 5m bars, 48 daily bars
+2026-04-20 14:03:15 [DEBUG   ]   F: 391 5m bars, 48 daily bars
+2026-04-20 14:03:15 [DEBUG   ]   PLTR: 404 5m bars, 48 daily bars
+2026-04-20 14:03:15 [DEBUG   ]   SOFI: 416 5m bars, 48 daily bars
+2026-04-20 14:03:16 [DEBUG   ]   SNAP: 433 5m bars, 48 daily bars
+2026-04-20 14:03:16 [DEBUG   ]   NIO: 441 5m bars, 48 daily bars
+2026-04-20 14:03:16 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 14:03:16 [INFO    ] Gaps calculated for 1 symbols. Notable: NIO -1.0%
+2026-04-20 14:31:43 [INFO    ] Daily start value: $100,000.00
+2026-04-20 14:31:43 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 14:31:44 [DEBUG   ]   AAPL: 397 5m bars, 48 daily bars
+2026-04-20 14:31:44 [DEBUG   ]   MSFT: 424 5m bars, 48 daily bars
+2026-04-20 14:31:44 [DEBUG   ]   GOOGL: 393 5m bars, 48 daily bars
+2026-04-20 14:31:45 [DEBUG   ]   AMZN: 394 5m bars, 48 daily bars
+2026-04-20 14:31:45 [DEBUG   ]   NVDA: 429 5m bars, 48 daily bars
+2026-04-20 14:31:45 [DEBUG   ]   META: 401 5m bars, 48 daily bars
+2026-04-20 14:31:45 [DEBUG   ]   TSLA: 421 5m bars, 48 daily bars
+2026-04-20 14:31:46 [DEBUG   ]   AMD: 395 5m bars, 48 daily bars
+2026-04-20 14:31:46 [DEBUG   ]   INTC: 394 5m bars, 48 daily bars
+2026-04-20 14:31:46 [DEBUG   ]   BAC: 395 5m bars, 48 daily bars
+2026-04-20 14:31:47 [DEBUG   ]   F: 391 5m bars, 48 daily bars
+2026-04-20 14:31:47 [DEBUG   ]   PLTR: 404 5m bars, 48 daily bars
+2026-04-20 14:31:47 [DEBUG   ]   SOFI: 416 5m bars, 48 daily bars
+2026-04-20 14:31:47 [DEBUG   ]   SNAP: 434 5m bars, 48 daily bars
+2026-04-20 14:31:48 [DEBUG   ]   NIO: 441 5m bars, 48 daily bars
+2026-04-20 14:31:48 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 14:31:48 [INFO    ] Gaps calculated for 6 symbols. Notable: SNAP -2.7%, NIO -1.0%
+2026-04-20 15:15:00 [INFO    ] === PRE-MARKET PREP (9:15 AM) ===
+2026-04-20 15:15:00 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 15:15:00 [INFO    ] === PRE-MARKET PREP (9:15 AM) ===
+2026-04-20 15:15:00 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 15:15:01 [DEBUG   ]   AAPL: 398 5m bars, 48 daily bars
+2026-04-20 15:15:01 [DEBUG   ]   AAPL: 398 5m bars, 48 daily bars
+2026-04-20 15:15:01 [DEBUG   ]   MSFT: 426 5m bars, 48 daily bars
+2026-04-20 15:15:01 [DEBUG   ]   MSFT: 426 5m bars, 48 daily bars
+2026-04-20 15:15:01 [DEBUG   ]   GOOGL: 394 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   GOOGL: 394 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   AMZN: 394 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   AMZN: 394 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   NVDA: 432 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   NVDA: 432 5m bars, 48 daily bars
+2026-04-20 15:15:02 [DEBUG   ]   META: 401 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   META: 401 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   TSLA: 425 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   AMD: 395 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   TSLA: 425 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   INTC: 394 5m bars, 48 daily bars
+2026-04-20 15:15:03 [DEBUG   ]   AMD: 395 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   BAC: 396 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   INTC: 394 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   F: 391 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   BAC: 396 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   PLTR: 404 5m bars, 48 daily bars
+2026-04-20 15:15:04 [DEBUG   ]   F: 391 5m bars, 48 daily bars
+2026-04-20 15:15:05 [DEBUG   ]   SOFI: 416 5m bars, 48 daily bars
+2026-04-20 15:15:05 [DEBUG   ]   PLTR: 404 5m bars, 48 daily bars
+2026-04-20 15:15:05 [DEBUG   ]   SNAP: 441 5m bars, 48 daily bars
+2026-04-20 15:15:05 [DEBUG   ]   SOFI: 416 5m bars, 48 daily bars
+2026-04-20 15:15:05 [DEBUG   ]   NIO: 442 5m bars, 48 daily bars
+2026-04-20 15:15:05 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 15:15:05 [DEBUG   ]   SNAP: 441 5m bars, 48 daily bars
+2026-04-20 15:15:06 [DEBUG   ]   NIO: 442 5m bars, 48 daily bars
+2026-04-20 15:15:06 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 15:15:06 [INFO    ] Daily start value: $100,000.00
+2026-04-20 15:15:06 [INFO    ] Gaps calculated for 8 symbols. Notable: SNAP -2.7%, NIO -1.0%
+2026-04-20 15:15:07 [INFO    ] Daily start value: $100,000.00
+2026-04-20 15:15:07 [INFO    ] Gaps calculated for 8 symbols. Notable: SNAP -2.7%, NIO -1.0%
+2026-04-20 15:30:00 [DEBUG   ] === TRADING TICK 09:30:00 ===
+2026-04-20 15:30:00 [DEBUG   ] === TRADING TICK 09:30:00 ===
+2026-04-20 15:30:01 [DEBUG   ] Bar poll error for META: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:30:01 [DEBUG   ] Bar poll error for AMD: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:30:14 [DEBUG   ] Bar poll error for META: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:30:16 [DEBUG   ] Bar poll error for AMD: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:00 [DEBUG   ] === TRADING TICK 09:35:00 ===
+2026-04-20 15:35:00 [DEBUG   ] === TRADING TICK 09:35:00 ===
+2026-04-20 15:35:01 [DEBUG   ] Bar poll error for AMZN: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:01 [DEBUG   ] Bar poll error for AMZN: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for INTC: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for INTC: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for F: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for F: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for PLTR: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for PLTR: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for SOFI: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:35:02 [DEBUG   ] Bar poll error for SOFI: Tz-aware datetime.datetime cannot be converted to datetime64 unless utc=True
+2026-04-20 15:40:00 [DEBUG   ] === TRADING TICK 09:40:00 ===
+2026-04-20 15:40:00 [DEBUG   ] === TRADING TICK 09:40:00 ===
+2026-04-20 15:45:00 [DEBUG   ] === TRADING TICK 09:45:00 ===
+2026-04-20 15:50:00 [DEBUG   ] === TRADING TICK 09:50:00 ===
+2026-04-20 15:50:00 [DEBUG   ] === TRADING TICK 09:50:00 ===
+2026-04-20 15:55:00 [DEBUG   ] === TRADING TICK 09:55:00 ===
+2026-04-20 15:55:00 [DEBUG   ] === TRADING TICK 09:55:00 ===
+2026-04-20 16:00:00 [INFO    ] === COMPUTING OPENING RANGES (10:00 AM) ===
+2026-04-20 16:00:00 [INFO    ] === COMPUTING OPENING RANGES (10:00 AM) ===
+2026-04-20 16:00:00 [DEBUG   ] === TRADING TICK 10:00:00 ===
+2026-04-20 16:00:00 [DEBUG   ] === TRADING TICK 10:00:00 ===
+2026-04-20 16:00:03 [INFO    ] Opening ranges computed for 1 symbols
+2026-04-20 16:00:21 [INFO    ] Opening ranges computed for 1 symbols
+2026-04-20 16:05:00 [DEBUG   ] === TRADING TICK 10:05:00 ===
+2026-04-20 16:05:00 [DEBUG   ] === TRADING TICK 10:05:00 ===
+2026-04-20 16:10:00 [DEBUG   ] === TRADING TICK 10:10:00 ===
+2026-04-20 16:10:00 [DEBUG   ] === TRADING TICK 10:10:00 ===
+2026-04-20 16:15:00 [DEBUG   ] === TRADING TICK 10:15:00 ===
+2026-04-20 16:15:00 [DEBUG   ] === TRADING TICK 10:15:00 ===
+2026-04-20 16:15:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001673EE3C690>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 16:15:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001A95454C7D0>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 16:20:00 [DEBUG   ] === TRADING TICK 10:20:00 ===
+2026-04-20 16:20:00 [DEBUG   ] === TRADING TICK 10:20:00 ===
+2026-04-20 16:25:00 [DEBUG   ] === TRADING TICK 10:25:00 ===
+2026-04-20 16:25:00 [DEBUG   ] === TRADING TICK 10:25:00 ===
+2026-04-20 16:25:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001673EE3C910>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 16:25:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001A95454C910>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 16:30:00 [DEBUG   ] === TRADING TICK 10:30:00 ===
+2026-04-20 16:30:00 [DEBUG   ] === TRADING TICK 10:30:00 ===
+2026-04-20 16:35:00 [DEBUG   ] === TRADING TICK 10:35:00 ===
+2026-04-20 16:35:00 [DEBUG   ] === TRADING TICK 10:35:00 ===
+2026-04-20 16:40:00 [DEBUG   ] === TRADING TICK 10:40:00 ===
+2026-04-20 16:40:00 [DEBUG   ] === TRADING TICK 10:40:00 ===
+2026-04-20 16:40:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001673EE3CA50>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 16:45:00 [DEBUG   ] === TRADING TICK 10:45:00 ===
+2026-04-20 16:45:00 [DEBUG   ] === TRADING TICK 10:45:00 ===
+2026-04-20 16:50:00 [DEBUG   ] === TRADING TICK 10:50:00 ===
+2026-04-20 16:50:00 [DEBUG   ] === TRADING TICK 10:50:00 ===
+2026-04-20 16:55:00 [DEBUG   ] === TRADING TICK 10:55:00 ===
+2026-04-20 16:55:00 [DEBUG   ] === TRADING TICK 10:55:00 ===
+2026-04-20 17:00:00 [DEBUG   ] === TRADING TICK 11:00:00 ===
+2026-04-20 17:05:00 [DEBUG   ] === TRADING TICK 11:05:00 ===
+2026-04-20 17:05:00 [DEBUG   ] === TRADING TICK 11:05:00 ===
+2026-04-20 17:05:21 [DEBUG   ] Bar poll error for AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=5Min&adjustment=raw&limit=1&feed=iex (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001A95454CA50>, 'Connection to data.alpaca.markets timed out. (connect timeout=None)'))
+2026-04-20 17:10:00 [DEBUG   ] === TRADING TICK 11:10:00 ===
+2026-04-20 17:10:00 [DEBUG   ] === TRADING TICK 11:10:00 ===
+2026-04-20 17:15:00 [DEBUG   ] === TRADING TICK 11:15:00 ===
+2026-04-20 17:15:00 [DEBUG   ] === TRADING TICK 11:15:00 ===
+2026-04-20 17:20:00 [DEBUG   ] === TRADING TICK 11:20:00 ===
+2026-04-20 17:20:00 [DEBUG   ] === TRADING TICK 11:20:00 ===
+2026-04-20 17:25:00 [DEBUG   ] === TRADING TICK 11:25:00 ===
+2026-04-20 17:25:00 [DEBUG   ] === TRADING TICK 11:25:00 ===
+2026-04-20 17:30:00 [DEBUG   ] === TRADING TICK 11:30:00 ===
+2026-04-20 17:30:00 [DEBUG   ] === TRADING TICK 11:30:00 ===
+2026-04-20 22:13:05 [INFO    ] Daily start value: $100,000.00
+2026-04-20 22:13:06 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 22:13:07 [DEBUG   ]   AAPL: 476 5m bars, 49 daily bars
+2026-04-20 22:13:07 [DEBUG   ]   MSFT: 505 5m bars, 49 daily bars
+2026-04-20 22:13:07 [DEBUG   ]   GOOGL: 472 5m bars, 49 daily bars
+2026-04-20 22:13:08 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-20 22:13:08 [DEBUG   ]   NVDA: 512 5m bars, 49 daily bars
+2026-04-20 22:13:08 [DEBUG   ]   META: 481 5m bars, 49 daily bars
+2026-04-20 22:13:09 [DEBUG   ]   TSLA: 506 5m bars, 49 daily bars
+2026-04-20 22:13:09 [DEBUG   ]   AMD: 475 5m bars, 49 daily bars
+2026-04-20 22:13:09 [DEBUG   ]   INTC: 472 5m bars, 49 daily bars
+2026-04-20 22:13:10 [DEBUG   ]   BAC: 475 5m bars, 49 daily bars
+2026-04-20 22:13:10 [DEBUG   ]   F: 469 5m bars, 49 daily bars
+2026-04-20 22:13:10 [DEBUG   ]   PLTR: 482 5m bars, 49 daily bars
+2026-04-20 22:13:11 [DEBUG   ]   SOFI: 494 5m bars, 49 daily bars
+2026-04-20 22:13:11 [DEBUG   ]   SNAP: 522 5m bars, 49 daily bars
+2026-04-20 22:13:12 [DEBUG   ]   NIO: 518 5m bars, 49 daily bars
+2026-04-20 22:13:12 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 22:13:12 [INFO    ] Gaps calculated for 15 symbols. Notable: AAPL -1.0%, NVDA -1.1%, META +1.9%, TSLA +1.6%, AMD +1.6%, INTC +4.2%, SOFI -1.4%, SNAP -2.4%, NIO +1.2%
+2026-04-20 22:14:41 [INFO    ] Daily start value: $100,000.00
+2026-04-20 22:14:41 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 22:14:42 [DEBUG   ]   AAPL: 476 5m bars, 49 daily bars
+2026-04-20 22:14:43 [DEBUG   ]   MSFT: 505 5m bars, 49 daily bars
+2026-04-20 22:14:43 [DEBUG   ]   GOOGL: 472 5m bars, 49 daily bars
+2026-04-20 22:14:43 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-20 22:14:44 [DEBUG   ]   NVDA: 512 5m bars, 49 daily bars
+2026-04-20 22:14:44 [DEBUG   ]   META: 481 5m bars, 49 daily bars
+2026-04-20 22:14:44 [DEBUG   ]   TSLA: 506 5m bars, 49 daily bars
+2026-04-20 22:14:45 [DEBUG   ]   AMD: 475 5m bars, 49 daily bars
+2026-04-20 22:14:45 [DEBUG   ]   INTC: 472 5m bars, 49 daily bars
+2026-04-20 22:14:45 [DEBUG   ]   BAC: 475 5m bars, 49 daily bars
+2026-04-20 22:14:45 [DEBUG   ]   F: 469 5m bars, 49 daily bars
+2026-04-20 22:14:46 [DEBUG   ]   PLTR: 482 5m bars, 49 daily bars
+2026-04-20 22:14:46 [DEBUG   ]   SOFI: 494 5m bars, 49 daily bars
+2026-04-20 22:14:46 [DEBUG   ]   SNAP: 522 5m bars, 49 daily bars
+2026-04-20 22:14:47 [DEBUG   ]   NIO: 518 5m bars, 49 daily bars
+2026-04-20 22:14:47 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 22:14:47 [INFO    ] Gaps calculated for 15 symbols. Notable: AAPL -1.0%, NVDA -1.1%, META +1.9%, TSLA +1.6%, AMD +1.6%, INTC +4.2%, SOFI -1.4%, SNAP -2.4%, NIO +1.2%
+2026-04-20 22:18:54 [INFO    ] Daily start value: $100,000.00
+2026-04-20 22:18:55 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-20 22:18:55 [DEBUG   ]   AAPL: 476 5m bars, 49 daily bars
+2026-04-20 22:18:56 [DEBUG   ]   MSFT: 505 5m bars, 49 daily bars
+2026-04-20 22:18:56 [DEBUG   ]   GOOGL: 472 5m bars, 49 daily bars
+2026-04-20 22:18:57 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-20 22:18:57 [DEBUG   ]   NVDA: 513 5m bars, 49 daily bars
+2026-04-20 22:18:57 [DEBUG   ]   META: 481 5m bars, 49 daily bars
+2026-04-20 22:18:58 [DEBUG   ]   TSLA: 506 5m bars, 49 daily bars
+2026-04-20 22:18:58 [DEBUG   ]   AMD: 475 5m bars, 49 daily bars
+2026-04-20 22:18:58 [DEBUG   ]   INTC: 472 5m bars, 49 daily bars
+2026-04-20 22:18:59 [DEBUG   ]   BAC: 475 5m bars, 49 daily bars
+2026-04-20 22:18:59 [DEBUG   ]   F: 469 5m bars, 49 daily bars
+2026-04-20 22:18:59 [DEBUG   ]   PLTR: 483 5m bars, 49 daily bars
+2026-04-20 22:19:00 [DEBUG   ]   SOFI: 494 5m bars, 49 daily bars
+2026-04-20 22:19:00 [DEBUG   ]   SNAP: 522 5m bars, 49 daily bars
+2026-04-20 22:19:00 [DEBUG   ]   NIO: 518 5m bars, 49 daily bars
+2026-04-20 22:19:00 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-20 22:19:01 [INFO    ] Gaps calculated for 15 symbols. Notable: AAPL -1.0%, NVDA -1.1%, META +1.9%, TSLA +1.6%, AMD +1.6%, INTC +4.2%, SOFI -1.4%, SNAP -2.4%, NIO +1.2%

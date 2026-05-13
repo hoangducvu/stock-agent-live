@@ -1,0 +1,12 @@
+node_modules
+frontend/node_modules
+frontend/dist
+.git
+.env
+logs/*.log
+data/.bot.lock
+electron/
+*.bat
+.claude/
+__pycache__
+*.pyc

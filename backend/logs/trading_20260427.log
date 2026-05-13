@@ -1,0 +1,93 @@
+2026-04-27 17:31:26 [INFO    ] Daily start value: $99,999.94
+2026-04-27 17:31:27 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 17:31:29 [DEBUG   ]   AAPL: 426 5m bars, 49 daily bars
+2026-04-27 17:31:30 [DEBUG   ]   MSFT: 453 5m bars, 49 daily bars
+2026-04-27 17:31:31 [DEBUG   ]   GOOGL: 427 5m bars, 49 daily bars
+2026-04-27 17:31:32 [DEBUG   ]   AMZN: 419 5m bars, 49 daily bars
+2026-04-27 17:31:33 [DEBUG   ]   NVDA: 446 5m bars, 49 daily bars
+2026-04-27 17:31:34 [DEBUG   ]   META: 423 5m bars, 49 daily bars
+2026-04-27 17:31:34 [DEBUG   ]   TSLA: 461 5m bars, 49 daily bars
+2026-04-27 17:31:35 [DEBUG   ]   AMD: 449 5m bars, 49 daily bars
+2026-04-27 17:31:37 [DEBUG   ]   INTC: 447 5m bars, 49 daily bars
+2026-04-27 17:31:38 [DEBUG   ]   BAC: 418 5m bars, 49 daily bars
+2026-04-27 17:31:39 [DEBUG   ]   F: 415 5m bars, 49 daily bars
+2026-04-27 17:31:40 [DEBUG   ]   PLTR: 426 5m bars, 49 daily bars
+2026-04-27 17:31:40 [DEBUG   ]   SOFI: 428 5m bars, 49 daily bars
+2026-04-27 17:31:41 [DEBUG   ]   SNAP: 442 5m bars, 49 daily bars
+2026-04-27 17:31:42 [DEBUG   ]   NIO: 444 5m bars, 49 daily bars
+2026-04-27 17:31:42 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-27 17:31:42 [INFO    ] Gaps calculated for 15 symbols. Notable: GOOGL -1.3%, AMZN +1.2%, TSLA +1.5%, AMD +4.4%, PLTR -2.2%, SOFI -1.6%, SNAP -5.9%, NIO +2.3%
+2026-04-27 17:31:43 [INFO    ] === COMPUTING OPENING RANGES (10:00 AM) ===
+2026-04-27 17:31:52 [INFO    ] Opening ranges computed for 15 symbols
+2026-04-27 17:31:52 [DEBUG   ] === TRADING TICK 11:31:52 ===
+2026-04-27 17:33:31 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-27 17:33:32 [INFO    ] All pending orders cancelled
+2026-04-27 17:33:32 [WARNING ] CLOSING ALL POSITIONS
+2026-04-27 17:33:32 [INFO    ]   All open orders cancelled
+2026-04-27 17:33:33 [INFO    ] === END OF DAY SUMMARY ===
+2026-04-27 17:33:36 [INFO    ] Daily start value: $99,999.94
+2026-04-27 17:33:36 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 17:33:37 [DEBUG   ]   AAPL: 426 5m bars, 49 daily bars
+2026-04-27 17:33:38 [DEBUG   ]   MSFT: 453 5m bars, 49 daily bars
+2026-04-27 17:33:38 [DEBUG   ]   GOOGL: 427 5m bars, 49 daily bars
+2026-04-27 17:33:39 [DEBUG   ]   AMZN: 419 5m bars, 49 daily bars
+2026-04-27 17:33:40 [DEBUG   ]   NVDA: 446 5m bars, 49 daily bars
+2026-04-27 17:33:41 [DEBUG   ]   META: 423 5m bars, 49 daily bars
+2026-04-27 17:33:41 [DEBUG   ]   TSLA: 461 5m bars, 49 daily bars
+2026-04-27 17:33:42 [DEBUG   ]   AMD: 449 5m bars, 49 daily bars
+2026-04-27 17:33:43 [DEBUG   ]   INTC: 447 5m bars, 49 daily bars
+2026-04-27 17:33:43 [DEBUG   ]   BAC: 418 5m bars, 49 daily bars
+2026-04-27 17:33:44 [DEBUG   ]   F: 415 5m bars, 49 daily bars
+2026-04-27 17:33:44 [DEBUG   ]   PLTR: 426 5m bars, 49 daily bars
+2026-04-27 17:33:44 [DEBUG   ]   SOFI: 428 5m bars, 49 daily bars
+2026-04-27 17:33:45 [DEBUG   ]   SNAP: 442 5m bars, 49 daily bars
+2026-04-27 17:33:45 [DEBUG   ]   NIO: 444 5m bars, 49 daily bars
+2026-04-27 17:33:45 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-27 17:33:46 [INFO    ] Gaps calculated for 15 symbols. Notable: GOOGL -1.3%, AMZN +1.2%, TSLA +1.5%, AMD +4.8%, PLTR -2.0%, SOFI -1.5%, SNAP -5.4%, NIO +2.4%
+2026-04-27 17:33:46 [INFO    ] === COMPUTING OPENING RANGES (10:00 AM) ===
+2026-04-27 17:33:49 [INFO    ] Opening ranges computed for 15 symbols
+2026-04-27 17:33:49 [DEBUG   ] === TRADING TICK 11:33:49 ===
+2026-04-27 17:34:42 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-27 17:34:42 [INFO    ] All pending orders cancelled
+2026-04-27 17:34:42 [WARNING ] CLOSING ALL POSITIONS
+2026-04-27 17:34:43 [INFO    ]   All open orders cancelled
+2026-04-27 17:34:43 [INFO    ] === END OF DAY SUMMARY ===
+2026-04-27 17:34:46 [INFO    ] Daily start value: $99,999.94
+2026-04-27 17:34:46 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 17:34:48 [DEBUG   ]   AAPL: 426 5m bars, 49 daily bars
+2026-04-27 17:34:49 [DEBUG   ]   MSFT: 453 5m bars, 49 daily bars
+2026-04-27 17:34:51 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-27 17:34:51 [INFO    ] All pending orders cancelled
+2026-04-27 17:34:51 [WARNING ] CLOSING ALL POSITIONS
+2026-04-27 17:34:51 [INFO    ]   All open orders cancelled
+2026-04-27 17:34:51 [INFO    ] === END OF DAY SUMMARY ===
+2026-04-27 17:35:25 [INFO    ] Daily start value: $99,999.94
+2026-04-27 17:35:25 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 17:35:28 [DEBUG   ]   AAPL: 426 5m bars, 49 daily bars
+2026-04-27 17:35:35 [INFO    ] Daily start value: $99,999.94
+2026-04-27 17:35:36 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-27 17:35:38 [DEBUG   ]   AAPL: 426 5m bars, 49 daily bars
+2026-04-27 17:35:39 [DEBUG   ]   MSFT: 453 5m bars, 49 daily bars
+2026-04-27 17:35:39 [DEBUG   ]   GOOGL: 427 5m bars, 49 daily bars
+2026-04-27 17:35:41 [DEBUG   ]   AMZN: 419 5m bars, 49 daily bars
+2026-04-27 17:35:42 [DEBUG   ]   NVDA: 446 5m bars, 49 daily bars
+2026-04-27 17:35:42 [DEBUG   ]   META: 423 5m bars, 49 daily bars
+2026-04-27 17:35:43 [DEBUG   ]   TSLA: 461 5m bars, 49 daily bars
+2026-04-27 17:35:44 [DEBUG   ]   AMD: 449 5m bars, 49 daily bars
+2026-04-27 17:35:45 [DEBUG   ]   INTC: 447 5m bars, 49 daily bars
+2026-04-27 17:35:46 [DEBUG   ]   BAC: 418 5m bars, 49 daily bars
+2026-04-27 17:35:47 [DEBUG   ]   F: 415 5m bars, 49 daily bars
+2026-04-27 17:35:48 [DEBUG   ]   PLTR: 426 5m bars, 49 daily bars
+2026-04-27 17:35:48 [DEBUG   ]   SOFI: 428 5m bars, 49 daily bars
+2026-04-27 17:35:49 [DEBUG   ]   SNAP: 442 5m bars, 49 daily bars
+2026-04-27 17:35:51 [DEBUG   ]   NIO: 444 5m bars, 49 daily bars
+2026-04-27 17:35:51 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-27 17:35:51 [INFO    ] Gaps calculated for 15 symbols. Notable: GOOGL -1.4%, AMZN +1.1%, TSLA +1.5%, AMD +4.6%, PLTR -2.0%, SOFI -1.5%, SNAP -5.3%, NIO +2.2%
+2026-04-27 17:35:51 [INFO    ] === COMPUTING OPENING RANGES (10:00 AM) ===
+2026-04-27 17:35:59 [INFO    ] Opening ranges computed for 15 symbols
+2026-04-27 17:35:59 [DEBUG   ] === TRADING TICK 11:35:59 ===
+2026-04-27 17:37:09 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-27 17:37:09 [INFO    ] All pending orders cancelled
+2026-04-27 17:37:09 [WARNING ] CLOSING ALL POSITIONS
+2026-04-27 17:37:09 [INFO    ]   All open orders cancelled
+2026-04-27 17:37:10 [INFO    ] === END OF DAY SUMMARY ===

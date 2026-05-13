@@ -1,0 +1,44 @@
+{
+  "name": "stockagent",
+  "version": "1.0.0-demo",
+  "description": "Automated stock trading platform powered by Alpaca API",
+  "main": "electron/main.js",
+  "scripts": {
+    "electron": "electron .",
+    "electron:dev": "concurrently \"npm run dev --prefix frontend\" \"wait-on http://localhost:5173 && electron .\"",
+    "build:win":   "npm run build --prefix frontend && electron-builder --win",
+    "build:mac":   "npm run build --prefix frontend && electron-builder --mac",
+    "build:linux": "npm run build --prefix frontend && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.stockagent.app",
+    "productName": "StockAgent",
+    "files": [
+      "electron/**",
+      "frontend/dist/**",
+      "backend/**",
+      "*.py",
+      "requirements.txt"
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "frontend/public/favicon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.finance"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "wait-on": "^7.2.0"
+  }
+}

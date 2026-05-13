@@ -1,0 +1,7 @@
+alpaca-trade-api>=3.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+pytz>=2023.3
+APScheduler>=3.10.0
+slack-bolt>=1.18.0
+anthropic>=0.40.0

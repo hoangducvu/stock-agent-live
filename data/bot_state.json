@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-04-29 06:41:38 ET",
+  "running": true,
+  "portfolio_value": 99999.93,
+  "buying_power": 199999.86,
+  "daily_pnl": 0.0,
+  "pdt_count": 0,
+  "pdt_limit": 3,
+  "halted": false,
+  "open_positions": [],
+  "trades_today": [],
+  "stock_universe": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "NVDA",
+    "META",
+    "TSLA",
+    "AMD",
+    "INTC",
+    "BAC",
+    "F",
+    "PLTR",
+    "SOFI",
+    "SNAP",
+    "NIO"
+  ],
+  "strategies": {
+    "EMA_VWAP": "Intraday 5-min momentum using EMA(9/21/55) crossover above VWAP with ATR stops",
+    "ORB": "Intraday opening range breakout \u2014 buys breakout above first-30min high after 10am",
+    "RSI_BOUNCE": "Swing trade mean reversion \u2014 buys when daily RSI(7) < 25 near lower Bollinger Band"
+  },
+  "risk_limits": {
+    "max_position_pct": 0.05,
+    "max_concurrent": 3,
+    "max_daily_loss_pct": 0.02,
+    "max_order_value": 10.0
+  }
+}

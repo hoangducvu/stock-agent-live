@@ -1,0 +1,43 @@
+2026-04-29 10:40:55 [INFO    ] Daily start value: $99,999.93
+2026-04-29 10:40:55 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-29 10:40:56 [DEBUG   ]   AAPL: 480 5m bars, 49 daily bars
+2026-04-29 10:40:56 [DEBUG   ]   MSFT: 503 5m bars, 49 daily bars
+2026-04-29 10:40:57 [DEBUG   ]   GOOGL: 480 5m bars, 49 daily bars
+2026-04-29 10:40:57 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-29 10:40:57 [DEBUG   ]   NVDA: 510 5m bars, 49 daily bars
+2026-04-29 10:40:58 [DEBUG   ]   META: 478 5m bars, 49 daily bars
+2026-04-29 10:40:58 [DEBUG   ]   TSLA: 517 5m bars, 49 daily bars
+2026-04-29 10:40:58 [DEBUG   ]   AMD: 513 5m bars, 49 daily bars
+2026-04-29 10:40:58 [DEBUG   ]   INTC: 512 5m bars, 49 daily bars
+2026-04-29 10:40:59 [DEBUG   ]   BAC: 469 5m bars, 49 daily bars
+2026-04-29 10:40:59 [DEBUG   ]   F: 468 5m bars, 49 daily bars
+2026-04-29 10:40:59 [DEBUG   ]   PLTR: 477 5m bars, 49 daily bars
+2026-04-29 10:41:00 [DEBUG   ]   SOFI: 481 5m bars, 49 daily bars
+2026-04-29 10:41:00 [DEBUG   ]   SNAP: 484 5m bars, 49 daily bars
+2026-04-29 10:41:00 [DEBUG   ]   NIO: 508 5m bars, 49 daily bars
+2026-04-29 10:41:00 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-29 10:41:00 [INFO    ] Gaps calculated for 0 symbols. Notable: none > 1%
+2026-04-29 10:41:32 [INFO    ] Daily start value: $99,999.93
+2026-04-29 10:41:32 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-29 10:41:33 [DEBUG   ]   AAPL: 480 5m bars, 49 daily bars
+2026-04-29 10:41:34 [DEBUG   ]   MSFT: 503 5m bars, 49 daily bars
+2026-04-29 10:41:34 [DEBUG   ]   GOOGL: 480 5m bars, 49 daily bars
+2026-04-29 10:41:34 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-29 10:41:34 [DEBUG   ]   NVDA: 510 5m bars, 49 daily bars
+2026-04-29 10:41:35 [DEBUG   ]   META: 478 5m bars, 49 daily bars
+2026-04-29 10:41:35 [DEBUG   ]   TSLA: 517 5m bars, 49 daily bars
+2026-04-29 10:41:35 [DEBUG   ]   AMD: 513 5m bars, 49 daily bars
+2026-04-29 10:41:36 [DEBUG   ]   INTC: 512 5m bars, 49 daily bars
+2026-04-29 10:41:36 [DEBUG   ]   BAC: 469 5m bars, 49 daily bars
+2026-04-29 10:41:36 [DEBUG   ]   F: 468 5m bars, 49 daily bars
+2026-04-29 10:41:37 [DEBUG   ]   PLTR: 477 5m bars, 49 daily bars
+2026-04-29 10:41:37 [DEBUG   ]   SOFI: 481 5m bars, 49 daily bars
+2026-04-29 10:41:37 [DEBUG   ]   SNAP: 484 5m bars, 49 daily bars
+2026-04-29 10:41:38 [DEBUG   ]   NIO: 508 5m bars, 49 daily bars
+2026-04-29 10:41:38 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-29 10:41:38 [INFO    ] Gaps calculated for 0 symbols. Notable: none > 1%
+2026-04-29 10:42:00 [INFO    ] === GRACEFUL SHUTDOWN ===
+2026-04-29 10:42:01 [INFO    ] All pending orders cancelled
+2026-04-29 10:42:01 [WARNING ] CLOSING ALL POSITIONS
+2026-04-29 10:42:01 [INFO    ]   All open orders cancelled
+2026-04-29 10:42:01 [INFO    ] === END OF DAY SUMMARY ===

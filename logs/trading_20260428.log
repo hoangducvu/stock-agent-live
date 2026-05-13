@@ -1,0 +1,19 @@
+2026-04-28 08:02:06 [INFO    ] Daily start value: $99,999.94
+2026-04-28 08:02:06 [INFO    ] Downloading historical data for 15 symbols...
+2026-04-28 08:02:07 [DEBUG   ]   AAPL: 479 5m bars, 49 daily bars
+2026-04-28 08:02:07 [DEBUG   ]   MSFT: 506 5m bars, 49 daily bars
+2026-04-28 08:02:07 [DEBUG   ]   GOOGL: 480 5m bars, 49 daily bars
+2026-04-28 08:02:08 [DEBUG   ]   AMZN: 472 5m bars, 49 daily bars
+2026-04-28 08:02:08 [DEBUG   ]   NVDA: 501 5m bars, 49 daily bars
+2026-04-28 08:02:08 [DEBUG   ]   META: 476 5m bars, 49 daily bars
+2026-04-28 08:02:09 [DEBUG   ]   TSLA: 514 5m bars, 49 daily bars
+2026-04-28 08:02:09 [DEBUG   ]   AMD: 503 5m bars, 49 daily bars
+2026-04-28 08:02:09 [DEBUG   ]   INTC: 500 5m bars, 49 daily bars
+2026-04-28 08:02:10 [DEBUG   ]   BAC: 471 5m bars, 49 daily bars
+2026-04-28 08:02:10 [DEBUG   ]   F: 468 5m bars, 49 daily bars
+2026-04-28 08:02:10 [DEBUG   ]   PLTR: 479 5m bars, 49 daily bars
+2026-04-28 08:02:11 [DEBUG   ]   SOFI: 481 5m bars, 49 daily bars
+2026-04-28 08:02:11 [DEBUG   ]   SNAP: 494 5m bars, 49 daily bars
+2026-04-28 08:02:11 [DEBUG   ]   NIO: 496 5m bars, 49 daily bars
+2026-04-28 08:02:11 [INFO    ] Data ready: 15/15 stocks with 5m, 15/15 with daily
+2026-04-28 08:02:11 [INFO    ] Gaps calculated for 0 symbols. Notable: none > 1%

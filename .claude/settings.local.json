@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"C:\\\\Users\\\\MSl\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--stock-bot-stock-agent-live\\\\fc36139e-ae69-4654-9bf9-adbbb36c92da\\\\tasks\\\\bj6kj5497.output\" -Wait)",
+      "Bash(Select-String -Pattern \".\")",
+      "Bash(tasklist)",
+      "Bash(pip install *)",
+      "Bash(python slack_controller.py)",
+      "Bash(jobs -l)"
+    ]
+  }
+}
