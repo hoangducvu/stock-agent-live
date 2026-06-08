@@ -23,7 +23,7 @@ scp -r "$LOCAL_DIR\Dockerfile.bot" "$LOCAL_DIR\Dockerfile.backend" "$LOCAL_DIR\D
     "$LOCAL_DIR\data_feed.py" "$LOCAL_DIR\indicators.py" `
     "$LOCAL_DIR\explainer.py" "$LOCAL_DIR\slack_controller.py" `
     "$LOCAL_DIR\strategy_ema_vwap.py" "$LOCAL_DIR\strategy_orb.py" `
-    "$LOCAL_DIR\strategy_rsi.py" "$LOCAL_DIR\utils.py" `
+    "$LOCAL_DIR\strategy_rsi.py" "$LOCAL_DIR\strategy_selector.py" "$LOCAL_DIR\utils.py" `
     "$LOCAL_DIR\data" `
     "${SERVER}:${REMOTE_DIR}/"
 

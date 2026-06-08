@@ -12,7 +12,7 @@ COPY main.py config.py env_loader.py logger_setup.py \
      account_manager.py risk_manager.py order_manager.py \
      data_feed.py indicators.py explainer.py \
      slack_controller.py \
-     strategy_ema_vwap.py strategy_orb.py strategy_rsi.py \
+     strategy_ema_vwap.py strategy_orb.py strategy_rsi.py strategy_selector.py \
      utils.py ./
 
 # Create data/logs dirs
