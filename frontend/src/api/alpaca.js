@@ -1,4 +1,4 @@
-const BASE = "http://65.108.242.41";
+const BASE = "";
 const TIMEOUT_MS = 15000;
 
 async function req(path, options = {}) {

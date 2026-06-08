@@ -82,8 +82,8 @@ async def validate_credentials(creds: Credentials):
     async with httpx.AsyncClient() as client:
         try:
             r = await client.get(url, headers=alpaca_headers(creds.api_key, creds.secret_key), timeout=10)
-            if r.status_code == 403:
-                raise HTTPException(status_code=403, detail="Invalid API credentials")
+            if r.status_code in (401, 403):
+                raise HTTPException(status_code=403, detail="Invalid API credentials — check your key and secret.")
             r.raise_for_status()
             data = r.json()
             return {
@@ -96,6 +96,10 @@ async def validate_credentials(creds: Credentials):
                 "portfolio_value": data.get("portfolio_value"),
                 "paper": creds.paper,
             }
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=502, detail=f"Alpaca returned {e.response.status_code}")
         except httpx.RequestError as e:
             raise HTTPException(status_code=502, detail=str(e))
 

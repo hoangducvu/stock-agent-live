@@ -22,16 +22,15 @@ def load_env():
                     key = key.strip()
                     value = value.strip().strip("'\"")
                     os.environ[key] = value
-    else:
-        print("\n  [FATAL] .env file not found!")
-        print("  Copy .env.example to .env and add your Alpaca API keys.")
-        sys.exit(1)
 
-    api_key = os.getenv("APCA_API_KEY_ID", "")
-    api_secret = os.getenv("APCA_API_SECRET_KEY", "")
+    # Accept both Alpaca's native names and the names the backend injects at launch
+    api_key = os.getenv("APCA_API_KEY_ID") or os.getenv("ALPACA_API_KEY", "")
+    api_secret = os.getenv("APCA_API_SECRET_KEY") or os.getenv("ALPACA_SECRET_KEY", "")
     kill_switch = os.getenv("KILL_SWITCH", "false").lower() == "true"
     close_on_shutdown = os.getenv("CLOSE_ON_SHUTDOWN", "true").lower() == "true"
-    trading_mode = os.getenv("TRADING_MODE", "paper").lower()  # "paper" or "live"
+    # TRADING_MODE from .env, or derive from ALPACA_PAPER injected by the backend
+    alpaca_paper = os.getenv("ALPACA_PAPER", "true").lower()
+    trading_mode = os.getenv("TRADING_MODE", "paper" if alpaca_paper != "false" else "live").lower()
 
     # ── Validate API keys ──
     if not api_key or api_key == "YOUR_API_KEY_HERE":
