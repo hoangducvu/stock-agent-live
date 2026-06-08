@@ -80,3 +80,22 @@ LOGS_DIR = "logs"
 WS_RECONNECT_BASE = 1              # base seconds for exponential backoff
 WS_RECONNECT_MAX = 60              # max seconds between reconnect attempts
 API_RETRY_DELAY = 5                # seconds to wait before API retry
+
+# ─── Short Strategies ────────────────────────────────────────────────────────
+EXTENSION_MAX_PCT_ABOVE_EMA21 = 0.03   # reject short if already >3% extended below EMA21
+SHORT_RSI_OVERBOUGHT = 75              # RSI(7) threshold for RSI_FADE entry
+SHORT_RSI_EXIT = 45                    # cover when RSI falls back to neutral
+SHORT_STOP_PCT_MIN = 0.02             # 2% stop above entry for RSI_FADE short
+
+# ─── Universe Scanner ────────────────────────────────────────────────────────
+SMALL_CAP_WATCHLIST: list = []         # extend with custom symbols as desired
+UNIVERSE_DAILY_MAX = 60               # max intraday symbols after mover injection
+UNIVERSE_SWING_MAX = 40               # max swing symbols
+UNIVERSE_MIN_PRICE = 1.0              # drop penny stocks
+UNIVERSE_MAX_PRICE = 10_000.0         # no hard upper cap
+
+# ─── Pre-market News Scanner ─────────────────────────────────────────────────
+PREMARKET_NEWS_LOOKBACK_HOURS = 14    # hours of news history to fetch
+PREMARKET_MIN_CONFIDENCE = 75         # minimum Claude confidence score to act
+PREMARKET_MAX_ENTRIES = 3             # max news-driven orders per pre-market run
+PREMARKET_LIMIT_OFFSET_PCT = 0.001    # 0.1% above ref price for pre-market limit buy

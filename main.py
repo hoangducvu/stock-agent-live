@@ -28,8 +28,12 @@ from utils import (
 import strategy_ema_vwap as s1
 import strategy_orb as s2
 import strategy_rsi as s3
+import strategy_ema_vwap_short as s4
+import strategy_rsi_fade as s5
 import strategy_selector
 import explainer
+import news_scanner
+from universe_scanner import UniverseScanner
 
 
 # ─── Global State ────────────────────────────────────────────────────────────
@@ -43,11 +47,15 @@ env_config = None
 log = None
 _shutting_down = False
 _orb_computed = False
+universe = None          # UniverseScanner instance
+_news_candidates = []    # pre-market news BUY candidates
+_shorts_enabled = False  # set from env SHORTS_ENABLED=true
 
 
 def main():
     global api, acct_mgr, risk_mgr, order_mgr, data_feed
     global scheduler, env_config, log, _orb_computed
+    global universe, _shorts_enabled
 
     # ── Step 1: Setup logging ──
     log = setup_logger()
@@ -101,6 +109,8 @@ def main():
     risk_mgr = RiskManager(acct_mgr)
     order_mgr = OrderManager(api, risk_mgr, acct_mgr)
     data_feed = DataFeed(api)
+    universe = UniverseScanner(api)
+    _shorts_enabled = os.getenv("SHORTS_ENABLED", "false").lower() == "true"
 
     # ── Step 6: Startup validation ──
     mode = env_config["trading_mode"]
@@ -218,33 +228,81 @@ def main():
 # ─── Scheduled Functions ─────────────────────────────────────────────────────
 
 def pre_market_prep():
-    """9:15 AM — download fresh data, calculate gaps, print briefing."""
-    global _orb_computed
+    """9:15 AM — refresh universe, download fresh data, run news scan."""
+    global _orb_computed, _news_candidates
     _orb_computed = False
+    _news_candidates = []
 
     log.info("=== PRE-MARKET PREP (9:15 AM) ===")
     print(f"\n  {cyan(bold('PRE-MARKET PREP — 9:15 AM'))}")
 
+    # Refresh universe (movers + bias hints); swing refresh on Mondays
+    universe.refresh_intraday()
+    if now_et().weekday() == 0:
+        universe.refresh_swing()
+
+    scan_symbols = universe.all_symbols() or config.STOCK_UNIVERSE
+
     # Refresh daily data
-    data_feed.download_historical(config.STOCK_UNIVERSE)
-    data_feed.compute_indicators(config.STOCK_UNIVERSE)
+    data_feed.download_historical(scan_symbols)
+    data_feed.compute_indicators(scan_symbols)
 
     # Reset daily risk
     portfolio_value = acct_mgr.get_portfolio_value()
     risk_mgr.init_daily(portfolio_value)
 
     # Calculate gaps
-    data_feed.calculate_gaps(config.STOCK_UNIVERSE)
+    data_feed.calculate_gaps(scan_symbols)
+
+    # Pre-market news scan
+    try:
+        _news_candidates = news_scanner.scan(api, scan_symbols)
+        if _news_candidates:
+            print(f"  {cyan(f'News scan: {len(_news_candidates)} high-confidence candidate(s)')}")
+            for c in _news_candidates:
+                print(f"    {c['symbol']:6s} conf={c['confidence']}  {c['reasoning'][:70]}")
+            _place_premarket_news_orders()
+    except Exception as e:
+        log.warning(f"News scan failed (non-fatal): {e}")
 
     # Print daily briefing
     pdt_count = acct_mgr.get_day_trade_count()
     mode = "SWING ONLY (PDT)" if pdt_count >= config.PDT_MAX_DAY_TRADES else "FULL"
 
+    print(f"  Universe:      {len(scan_symbols)} symbols "
+          f"(intraday={len(universe.intraday_symbols())}, swing={len(universe.swing_symbols())})")
     print(f"  Portfolio:     {fmt_price(portfolio_value)}")
     print(f"  PDT Status:    {pdt_count}/{config.PDT_MAX_DAY_TRADES}")
     print(f"  Strategy Mode: {mode}")
     print(f"  Gaps: {data_feed._notable_gaps()}")
     separator()
+
+
+def _place_premarket_news_orders():
+    """Submit pre-market limit buys for high-confidence news candidates."""
+    ok, _ = risk_mgr.can_trade()
+    if not ok:
+        return
+    for candidate in _news_candidates:
+        symbol = candidate["symbol"]
+        if symbol in risk_mgr.positions:
+            continue
+        ok, _ = risk_mgr.can_trade()
+        if not ok:
+            break
+        price = data_feed.get_last_price(symbol)
+        if price <= 0:
+            continue
+        qty, _ = risk_mgr.calc_position_size(price)
+        if qty < 1:
+            continue
+        sl = s3.calc_stops(price)  # use RSI_BOUNCE-style 2% stop for news entries
+        result = order_mgr.submit_buy_premarket(
+            symbol=symbol, qty=qty, ref_price=price,
+            strategy="PREMARKET_NEWS", stop_loss=sl,
+        )
+        if result and result.get("submitted"):
+            log.info(f"Pre-market order submitted for {symbol} (conf={candidate['confidence']})")
 
 
 def compute_orb():
@@ -313,7 +371,6 @@ def _check_exits():
         if pos.strategy == "EMA_VWAP":
             row = data_feed.get_latest_5m(symbol)
             should_exit, reason = s1.check_exit(pos, row)
-            # Update high water for trailing
             if row is not None:
                 risk_mgr.update_high_water(symbol, row.get("Close", 0))
 
@@ -324,13 +381,30 @@ def _check_exits():
 
         elif pos.strategy == "RSI_BOUNCE":
             row = data_feed.get_latest_daily(symbol)
-            # Calculate bars held in trading days
             entry_dt = datetime.strptime(pos.entry_time[:10], "%Y-%m-%d")
             bars_held = (now_et().date() - entry_dt.date()).days
             should_exit, reason = s3.check_exit(pos, row, bars_held)
 
+        elif pos.strategy == "EMA_VWAP_SHORT":
+            row = data_feed.get_latest_5m(symbol)
+            should_exit, reason = s4.check_exit(pos, row)
+            # Track low-water for trailing (reuses high_water field)
+            if row is not None:
+                price = row.get("Close", 0)
+                if price > 0 and (pos.high_water is None or price < pos.high_water):
+                    risk_mgr.update_high_water(symbol, price)
+
+        elif pos.strategy == "RSI_FADE":
+            row = data_feed.get_latest_daily(symbol)
+            entry_dt = datetime.strptime(pos.entry_time[:10], "%Y-%m-%d")
+            bars_held = (now_et().date() - entry_dt.date()).days
+            should_exit, reason = s5.check_exit(pos, row, bars_held)
+
         if should_exit:
-            _execute_exit(symbol, reason)
+            if pos.side == "short":
+                _execute_cover(symbol, reason)
+            else:
+                _execute_exit(symbol, reason)
 
 
 def _scan_entries():
@@ -338,29 +412,30 @@ def _scan_entries():
     can_dt = acct_mgr.can_day_trade()
     now = now_et()
 
-    # Check if we can even take new positions
-    ok, msg = risk_mgr.can_trade()
+    ok, _ = risk_mgr.can_trade()
     if not ok:
         return
 
-    # Prioritize Tier 1 stocks first
-    scan_order = config.TIER_1 + config.TIER_2
+    # Use dynamic universe if populated, else fall back to config tiers
+    intraday_syms = universe.intraday_symbols() if universe.intraday else config.STOCK_UNIVERSE
+    swing_syms = universe.swing_symbols() if universe.swing else config.STOCK_UNIVERSE
+    scan_order = list(dict.fromkeys(intraday_syms + swing_syms))  # dedup, preserve order
 
     for symbol in scan_order:
-        # Re-check capacity each iteration (may have filled a position)
-        ok, msg = risk_mgr.can_trade()
+        ok, _ = risk_mgr.can_trade()
         if not ok:
             break
 
-        # Skip if already holding
         if symbol in risk_mgr.positions:
             continue
 
-        # Get strategy selection
         daily_row = data_feed.get_latest_daily(symbol)
         gap_pct = data_feed.gaps.get(symbol, 0.0)
+        bias = universe.bias(symbol)
+
         strategies = strategy_selector.get_applicable_strategies(
-            symbol, daily_row, gap_pct, can_dt
+            symbol, daily_row, gap_pct, can_dt,
+            bias=bias, shorts_enabled=_shorts_enabled,
         )
 
         for strat_name, strat_reason in strategies:
@@ -368,7 +443,7 @@ def _scan_entries():
 
             if strat_name == "EMA_VWAP":
                 if not can_dt:
-                    continue  # intraday strategy, need PDT clearance
+                    continue
                 row = data_feed.get_latest_5m(symbol)
                 signal = s1.check_signal(row)
 
@@ -376,7 +451,7 @@ def _scan_entries():
                 if not can_dt:
                     continue
                 if now.time() < config.ORB_END:
-                    continue  # ORB only after 10 AM
+                    continue
                 row = data_feed.get_latest_5m(symbol)
                 orb = data_feed.opening_ranges.get(symbol)
                 if orb:
@@ -386,9 +461,23 @@ def _scan_entries():
             elif strat_name == "RSI_BOUNCE":
                 signal = s3.check_signal(daily_row)
 
+            elif strat_name == "EMA_VWAP_SHORT":
+                if not can_dt or not _shorts_enabled:
+                    continue
+                row = data_feed.get_latest_5m(symbol)
+                signal = s4.check_signal(row)
+
+            elif strat_name == "RSI_FADE":
+                if not _shorts_enabled:
+                    continue
+                signal = s5.check_signal(daily_row)
+
             if signal == "BUY":
                 _execute_entry(symbol, strat_name)
-                break  # one entry per symbol per tick
+                break
+            elif signal == "SHORT":
+                _execute_short_entry(symbol, strat_name)
+                break
 
 
 def _execute_entry(symbol: str, strategy: str):
@@ -507,6 +596,106 @@ def _execute_exit(symbol: str, reason: str):
             _write_state()
 
 
+def _execute_short_entry(symbol: str, strategy: str):
+    """Execute a short-sell entry for a symbol."""
+    price = data_feed.get_last_price(symbol)
+    if price <= 0:
+        return
+
+    qty, _ = risk_mgr.calc_position_size(price)
+    if qty <= 0:
+        return
+
+    if strategy == "EMA_VWAP_SHORT":
+        row = data_feed.get_latest_5m(symbol)
+        atr_val = row.get("atr", 0) if row is not None else 0
+        if atr_val <= 0:
+            return
+        sl, tp, trail = s4.calc_stops(price, atr_val)
+        details = s4.entry_details(row)
+    elif strategy == "RSI_FADE":
+        daily_row = data_feed.get_latest_daily(symbol)
+        sl = s5.calc_stops(price)
+        tp = None
+        trail = None
+        details = s5.entry_details(daily_row)
+    else:
+        return
+
+    risk_dollars, risk_pct = risk_mgr.risk_per_trade(price, sl, qty)
+    confidence = explainer.calc_confidence(strategy, details)
+    pdt_count = acct_mgr.get_day_trade_count()
+    buying_power = acct_mgr.get_buying_power()
+
+    explainer.explain_entry(
+        symbol=symbol, strategy=strategy, side="short",
+        price=price, qty=qty, stop_loss=sl,
+        take_profit=tp, details=details,
+        risk_dollars=risk_dollars, risk_pct=risk_pct,
+        pdt_count=pdt_count, buying_power=buying_power,
+        confidence=confidence,
+    )
+
+    result = order_mgr.submit_short(
+        symbol=symbol, qty=qty, price=price,
+        strategy=strategy, stop_loss=sl, take_profit=tp,
+        trail_activate=trail,
+    )
+
+    if result and result["filled"]:
+        fill_price = result["fill_price"]
+        filled_qty = result.get("filled_qty", qty)
+
+        if strategy == "EMA_VWAP_SHORT":
+            sl, tp, trail = s4.calc_stops(fill_price, atr_val)
+
+        pos = LivePosition(
+            symbol=symbol,
+            side="short",
+            entry_price=fill_price,
+            qty=filled_qty,
+            entry_time=now_et().strftime("%Y-%m-%d %H:%M:%S"),
+            strategy=strategy,
+            stop_loss=sl,
+            take_profit=tp if tp else 0,
+            trail_activate=trail,
+            trail_stop_atr=config.S1_TRAIL_STOP_ATR if trail else None,
+            high_water=fill_price,  # used as low_water for shorts
+            entry_value=fill_price * filled_qty,
+        )
+        risk_mgr.record_entry(pos)
+        _write_state()
+
+
+def _execute_cover(symbol: str, reason: str):
+    """Buy-to-cover an open short position."""
+    price = data_feed.get_last_price(symbol)
+    pos = risk_mgr.positions.get(symbol)
+    if not pos or price <= 0:
+        return
+
+    result = order_mgr.submit_cover(
+        symbol=symbol, qty=pos.qty, price=price, reason=reason
+    )
+
+    if result and result["filled"]:
+        exit_price = result["fill_price"]
+        trade = risk_mgr.record_exit(symbol, exit_price, reason)
+
+        if trade:
+            entry_dt = datetime.strptime(pos.entry_time, "%Y-%m-%d %H:%M:%S")
+            hold_delta = now_et().replace(tzinfo=None) - entry_dt
+            hold_str = f"{hold_delta.days}d" if hold_delta.days > 0 else f"{hold_delta.seconds // 60}m"
+
+            explainer.explain_exit(
+                symbol=symbol, strategy=pos.strategy,
+                entry_price=pos.entry_price, exit_price=exit_price,
+                qty=pos.qty, pnl=trade.pnl, pnl_pct=trade.pnl_pct,
+                reason=reason, hold_time=hold_str,
+            )
+            _write_state()
+
+
 def _sync_existing_positions():
     """
     Import any positions already open at the broker into risk_mgr so the
@@ -588,6 +777,8 @@ def time_stop_close():
         pos = risk_mgr.positions[symbol]
         if pos.strategy in ("EMA_VWAP", "ORB"):
             _execute_exit(symbol, "time_stop")
+        elif pos.strategy == "EMA_VWAP_SHORT":
+            _execute_cover(symbol, "time_stop")
 
     print(f"  {green('Intraday positions closed.')}")
 
@@ -708,6 +899,9 @@ def _write_state():
                 "EMA_VWAP": "Intraday 5-min momentum using EMA(9/21/55) crossover above VWAP with ATR stops",
                 "ORB": "Intraday opening range breakout — buys breakout above first-30min high after 10am",
                 "RSI_BOUNCE": "Swing trade mean reversion — buys when daily RSI(7) < 25 near lower Bollinger Band",
+                "EMA_VWAP_SHORT": "Intraday 5-min short — EMA(9) cross below EMA(21), price below EMA(55) and VWAP",
+                "RSI_FADE": "Swing short — RSI(7) > 75 near upper Bollinger Band, price below SMA(50)",
+                "PREMARKET_NEWS": "Pre-market news catalyst — Claude-scored headline confidence ≥ 75",
             },
             "risk_limits": {
                 "max_position_pct": config.MAX_POSITION_PCT,
