@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Sidebar from "./components/Sidebar";
+import HomePage from "./pages/HomePage";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Stocks from "./pages/Stocks";
@@ -22,13 +23,8 @@ function AppLayout() {
 
 function ProtectedRoute() {
   const { auth } = useAuth();
-  if (!auth) return <Navigate to="/" replace />;
+  if (!auth) return <Navigate to="/tradingbot" replace />;
   return <AppLayout />;
-}
-
-function RootRedirect() {
-  const { auth } = useAuth();
-  return <Navigate to={auth ? "/dashboard" : "/"} replace />;
 }
 
 export default function App() {
@@ -36,15 +32,23 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Onboarding />} />
+          {/* ── Main homepage ── */}
+          <Route path="/" element={<HomePage />} />
+
+          {/* ── Trading bot onboarding/login ── */}
+          <Route path="/tradingbot" element={<Onboarding />} />
+
+          {/* ── Trading bot protected pages ── */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/stocks"    element={<Stocks />} />
-            <Route path="/strategy"  element={<Strategy />} />
-            <Route path="/news"      element={<News />} />
-            <Route path="/learn"     element={<Learn />} />
+            <Route path="/tradingbot/dashboard" element={<Dashboard />} />
+            <Route path="/tradingbot/stocks"    element={<Stocks />} />
+            <Route path="/tradingbot/strategy"  element={<Strategy />} />
+            <Route path="/tradingbot/news"      element={<News />} />
+            <Route path="/tradingbot/learn"     element={<Learn />} />
           </Route>
-          <Route path="*" element={<RootRedirect />} />
+
+          {/* ── Fallback ── */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

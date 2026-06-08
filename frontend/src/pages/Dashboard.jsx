@@ -365,7 +365,7 @@ export default function Dashboard() {
       <div className="panel" style={{ marginBottom: 16 }}>
         <div className="panel-header">
           <span className="panel-title">Your Bots</span>
-          <button className="btn-sm" onClick={() => navigate("/strategy")}>Configure</button>
+          <button className="btn-sm" onClick={() => navigate("/tradingbot/strategy")}>Configure</button>
         </div>
 
         {/* Table header */}

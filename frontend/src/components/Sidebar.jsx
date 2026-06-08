@@ -2,11 +2,11 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 const NAV = [
-  { to: "/dashboard", icon: "▦", label: "Dashboard"  },
-  { to: "/stocks",    icon: "◈", label: "Stocks"     },
-  { to: "/strategy",  icon: "◆", label: "Strategies" },
-  { to: "/news",      icon: "◎", label: "News"       },
-  { to: "/learn",     icon: "◇", label: "Learn"      },
+  { to: "/tradingbot/dashboard", icon: "▦", label: "Dashboard"  },
+  { to: "/tradingbot/stocks",    icon: "◈", label: "Stocks"     },
+  { to: "/tradingbot/strategy",  icon: "◆", label: "Strategies" },
+  { to: "/tradingbot/news",      icon: "◎", label: "News"       },
+  { to: "/tradingbot/learn",     icon: "◇", label: "Learn"      },
 ];
 
 export default function Sidebar() {

@@ -84,7 +84,7 @@ export default function Onboarding() {
     }
     if (step === STEPS.length - 1) {
       login(apiKey, secretKey, paper, selectedStrategy, selectedStocks);
-      navigate("/dashboard");
+      navigate("/tradingbot/dashboard");
       return;
     }
     setStep((s) => s + 1);

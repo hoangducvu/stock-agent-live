@@ -140,6 +140,13 @@ def main():
     # ── Step 12: Calculate gaps ──
     data_feed.calculate_gaps(config.STOCK_UNIVERSE)
 
+    # ── Step 12b: Reconcile pre-existing broker positions ──
+    # The bot only tracks positions it opened in this process. After a
+    # restart (dashboard stop/start, crash, or new day) any position still
+    # open at the broker would otherwise be invisible to _check_exits and
+    # would never be sold. Import them so the exit engine can manage them.
+    _sync_existing_positions()
+
     # Write initial state so Slack AI knows the bot is alive before the first tick
     _write_state()
 
@@ -498,6 +505,78 @@ def _execute_exit(symbol: str, reason: str):
                 reason=reason, hold_time=hold_str,
             )
             _write_state()
+
+
+def _sync_existing_positions():
+    """
+    Import any positions already open at the broker into risk_mgr so the
+    exit engine (_check_exits) will manage and eventually sell them.
+
+    Without this, positions opened before the current process started are
+    never tracked, so the bot never sells after buying across restarts.
+
+    Original strategy/entry-time are unknown, so each orphaned position is
+    adopted under EMA_VWAP (ATR stop/target + trailing + a guaranteed 3:30
+    time-stop close) when 5-min data is available, otherwise RSI_BOUNCE.
+    Stops are reconstructed from the broker average entry price.
+    """
+    try:
+        broker_positions = acct_mgr.get_open_positions()
+    except Exception as e:
+        log.error(f"Could not fetch positions for startup sync: {e}")
+        return
+
+    adopted = 0
+    for p in broker_positions:
+        symbol = p.symbol
+        if symbol in risk_mgr.positions:
+            continue  # already tracked
+
+        try:
+            qty = float(p.qty)
+            entry = float(p.avg_entry_price)
+        except (AttributeError, ValueError, TypeError):
+            continue
+
+        if qty <= 0 or entry <= 0:
+            continue  # skip shorts / bad data (bot is long-only)
+
+        row = data_feed.get_latest_5m(symbol)
+        atr_val = row.get("atr", 0) if row is not None else 0
+
+        if atr_val and atr_val > 0:
+            strategy = "EMA_VWAP"
+            sl, tp, trail = s1.calc_stops(entry, atr_val)
+            trail_atr = config.S1_TRAIL_STOP_ATR
+        else:
+            # No intraday data — manage as a swing position via RSI exits.
+            strategy = "RSI_BOUNCE"
+            sl = s3.calc_stops(entry)
+            tp = 0
+            trail = None
+            trail_atr = None
+
+        pos = LivePosition(
+            symbol=symbol,
+            side="long",
+            entry_price=entry,
+            qty=qty,
+            entry_time=now_et().strftime("%Y-%m-%d %H:%M:%S"),
+            strategy=strategy,
+            stop_loss=sl,
+            take_profit=tp if tp else 0,
+            trail_activate=trail,
+            trail_stop_atr=trail_atr,
+            high_water=entry,
+            entry_value=entry * qty,
+        )
+        risk_mgr.record_entry(pos)
+        adopted += 1
+        log.info(f"Adopted existing position {symbol} ({qty} @ {fmt_price(entry)}) as {strategy}")
+
+    if adopted:
+        msg = f"Adopted {adopted} pre-existing position(s) for exit management"
+        print(f"  {cyan(msg)}")
 
 
 def time_stop_close():
