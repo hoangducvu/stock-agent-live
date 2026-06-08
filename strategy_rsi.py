@@ -27,7 +27,8 @@ def check_signal(daily_row) -> str:
     if any(np.isnan(v) for v in [rsi_val, close, bb_lower, sma50]):
         return "NONE"
 
-    # BUY: RSI < 25, price near lower BB (within 1%), price above 50 SMA
+    # BUY: RSI < 25, price near lower BB (within 1%), price above 50 SMA.
+    # RSI<25 inherently excludes extended longs, so no extra extension filter needed here.
     if (rsi_val < config.S3_RSI_OVERSOLD and
             close <= bb_lower * 1.01 and
             close > sma50):

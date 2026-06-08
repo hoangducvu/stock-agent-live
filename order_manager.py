@@ -165,6 +165,116 @@ class OrderManager:
             self._cancel_order(order.id, symbol)
             return {"filled": False, "fill_price": 0}
 
+    # ─── Submit Short Order (open short) ─────────────────────────────────
+
+    def submit_short(self, symbol: str, qty: float, price: float,
+                     strategy: str, stop_loss: float,
+                     take_profit: float = None,
+                     trail_activate: float = None) -> dict:
+        """
+        Open a SHORT position: sell-to-open via a limit sell slightly below
+        market (for fast fill), then set a BUY-stop above entry as the stop loss.
+        Caller is responsible for ensuring shorts are permitted (TRADING_MODE,
+        Alpaca account.shorting_enabled).
+        """
+        limit_price = round(price * (1 - config.LIMIT_OFFSET_PCT), 2)
+        order_value = limit_price * qty
+
+        # Allow short re-entry on a symbol where we DON'T hold a long — but
+        # block if we already have *any* tracked position to avoid layering.
+        if symbol in self.risk.positions:
+            self.log.warning(f"Short rejected: already have position in {symbol}")
+            return None
+
+        # Buying power check still applies (margin requirement ~= position value)
+        bp = self.acct.get_buying_power()
+        if order_value > bp:
+            self.log.warning(
+                f"Short rejected: {symbol} needs {fmt_price(order_value)}, "
+                f"have {fmt_price(bp)}"
+            )
+            return None
+
+        self.log.info(
+            f"SUBMITTING SHORT: {symbol} | {fmt_shares(qty)} shares "
+            f"@ {fmt_price(limit_price)} limit sell | "
+            f"Value: {fmt_price(order_value)} | Strategy: {strategy}"
+        )
+
+        try:
+            order = self._submit_limit_order(
+                symbol=symbol, qty=qty, side="sell", limit_price=limit_price,
+            )
+        except Exception as e:
+            self.log.error(f"Short submission failed for {symbol}: {e}")
+            return None
+
+        if order is None:
+            return None
+
+        result = self._poll_fill(order.id, symbol)
+        if result["filled"]:
+            fill_price = result["fill_price"]
+            filled_qty = result["filled_qty"]
+            print(f"  {yellow('SHORT FILLED')} {symbol} | "
+                  f"{fmt_shares(filled_qty)} shares @ {fmt_price(fill_price)} | "
+                  f"Strategy: {strategy}")
+
+            # Stop for a short = BUY stop above entry
+            self._submit_stop_order(symbol, filled_qty, stop_loss, side="buy")
+            return {
+                "filled": True, "fill_price": fill_price,
+                "filled_qty": filled_qty, "order_id": order.id,
+            }
+        self.log.warning(f"  Short order NOT filled within timeout — cancelling")
+        self._cancel_order(order.id, symbol)
+        return {"filled": False, "fill_price": 0, "order_id": order.id}
+
+    # ─── Submit Cover Order (close short) ────────────────────────────────
+
+    def submit_cover(self, symbol: str, qty: float, price: float,
+                     reason: str) -> dict:
+        """Close a SHORT: buy-to-cover via a limit buy slightly above market."""
+        self._cancel_stop_order(symbol)
+
+        limit_price = round(price * (1 + config.LIMIT_OFFSET_PCT), 2)
+        self.log.info(
+            f"SUBMITTING COVER: {symbol} | {fmt_shares(qty)} shares "
+            f"@ {fmt_price(limit_price)} limit buy | Reason: {reason}"
+        )
+
+        try:
+            order = self._submit_limit_order(
+                symbol=symbol, qty=qty, side="buy", limit_price=limit_price,
+            )
+        except Exception as e:
+            self.log.error(f"Cover order failed for {symbol}: {e}")
+            try:
+                order = self.api.submit_order(
+                    symbol=symbol, qty=qty, side="buy",
+                    type="market", time_in_force="day",
+                )
+            except Exception as e2:
+                self.log.error(f"  Market cover also failed: {e2}")
+                return {"filled": False, "fill_price": 0}
+
+        if order is None:
+            return {"filled": False, "fill_price": 0}
+
+        result = self._poll_fill(order.id, symbol)
+        if result["filled"]:
+            fill_price = result["fill_price"]
+            print(f"  {green('COVER FILLED')} {symbol} | "
+                  f"{fmt_shares(qty)} shares @ {fmt_price(fill_price)} | "
+                  f"Reason: {reason}")
+            self._check_day_trade(symbol)
+            return {"filled": True, "fill_price": fill_price,
+                    "filled_qty": result["filled_qty"]}
+
+        self.log.warning(f"  Cover not filled — cancelling")
+        self._cancel_order(order.id, symbol)
+        return {"filled": False, "fill_price": 0}
+
     # ─── Close All Positions ─────────────────────────────────────────────
 
     def close_all_positions(self):
@@ -193,9 +303,13 @@ class OrderManager:
 
     # ─── Internal Order Helpers ──────────────────────────────────────────
 
-    def _submit_limit_order(self, symbol, qty, side, limit_price):
-        """Submit a limit order through Alpaca API."""
-        return self.api.submit_order(
+    def _submit_limit_order(self, symbol, qty, side, limit_price,
+                            extended_hours: bool = False):
+        """Submit a limit order through Alpaca API.
+        extended_hours=True routes to pre/post market (limit-only, day TIF).
+        Alpaca rejects fractional qty for ext-hours, so callers must pass whole shares.
+        """
+        kwargs = dict(
             symbol=symbol,
             qty=qty,
             side=side,
@@ -203,21 +317,69 @@ class OrderManager:
             time_in_force="day",
             limit_price=str(limit_price),
         )
+        if extended_hours:
+            kwargs["extended_hours"] = True
+        return self.api.submit_order(**kwargs)
 
-    def _submit_stop_order(self, symbol, qty, stop_price):
-        """Submit a stop-loss sell order for an open position."""
+    def submit_buy_premarket(self, symbol: str, qty: float, ref_price: float,
+                             strategy: str, stop_loss: float) -> dict:
+        """
+        Submit a pre-market LIMIT BUY (extended_hours=True). No fill poll —
+        order rests until pre-market liquidity arrives. Stop-loss is queued
+        immediately as GTC; it won't fire until 9:30 RTH (Alpaca rule).
+        Returns {"submitted": bool, "order_id": str|None, "limit_price": float}.
+        """
+        qty = int(qty)  # ext-hours rejects fractional shares
+        if qty < 1:
+            self.log.warning(f"Premarket BUY {symbol}: qty<1 after rounding, skipping")
+            return {"submitted": False, "order_id": None, "limit_price": 0}
+
+        limit_price = round(ref_price * (1 + config.PREMARKET_LIMIT_OFFSET_PCT), 2)
+
+        ok, reason = self.risk.validate_order(symbol, limit_price, qty)
+        if not ok:
+            self.log.warning(f"Premarket order rejected: {symbol} — {reason}")
+            return {"submitted": False, "order_id": None, "limit_price": limit_price}
+
+        self.log.info(
+            f"PREMARKET BUY: {symbol} | {qty} shares @ {fmt_price(limit_price)} "
+            f"(ref {fmt_price(ref_price)}) | Strategy: {strategy}"
+        )
+        try:
+            order = self._submit_limit_order(
+                symbol=symbol, qty=qty, side="buy",
+                limit_price=limit_price, extended_hours=True,
+            )
+        except Exception as e:
+            self.log.error(f"Premarket order failed for {symbol}: {e}")
+            return {"submitted": False, "order_id": None, "limit_price": limit_price}
+
+        if order is None:
+            return {"submitted": False, "order_id": None, "limit_price": limit_price}
+
+        self._submit_stop_order(symbol, qty, stop_loss)  # queued; fires at 9:30
+        return {"submitted": True, "order_id": order.id, "limit_price": limit_price}
+
+    def _submit_stop_order(self, symbol, qty, stop_price, side: str = "sell"):
+        """
+        Submit a stop-loss order for an open position.
+        side="sell" for a long stop (below entry), side="buy" for a short stop (above entry).
+        """
         stop_price = round(stop_price, 2)
+        # Alpaca rejects GTC stops on fractional qty — fractional must be DAY.
+        is_fractional = float(qty) != int(float(qty))
+        tif = "day" if is_fractional else "gtc"
         try:
             order = self.api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side="sell",
+                side=side,
                 type="stop",
-                time_in_force="gtc",
+                time_in_force=tif,
                 stop_price=str(stop_price),
             )
             self.stop_orders[symbol] = order.id
-            self.log.info(f"  Stop-loss set for {symbol} @ {fmt_price(stop_price)}")
+            self.log.info(f"  Stop-loss set ({side}) for {symbol} @ {fmt_price(stop_price)}")
         except Exception as e:
             self.log.error(f"  Failed to set stop for {symbol}: {e}")
 

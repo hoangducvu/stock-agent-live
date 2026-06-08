@@ -1,82 +1,113 @@
 """
-Strategy Selector — picks strategy per stock, enforces PDT override.
+Strategy Selector — picks long AND short strategies per stock,
+based on regime + universe scanner's bias hint.
 
-Priority:
-  1. PDT override: if day trades >= 3, force RSI_BOUNCE only
-  2. Gap > 1% → ORB
-  3. ATR% > 2% → EMA_VWAP
-  4. ATR% < 1.5% and range < 8% → RSI_BOUNCE
-  5. Default → EMA_VWAP
+Inputs from universe_scanner.bias():
+  - "long_pullback"  → prefer RSI_BOUNCE long
+  - "long_momentum"  → prefer EMA_VWAP long
+  - "short_fade"     → prefer RSI_FADE short + EMA_VWAP_SHORT
+  - "neutral"        → fall back to regime-based selection (old behavior)
+
+Output: list of (strategy_name, reason) — caller iterates and asks each
+strategy whether its `check_signal` fires.
+
+The strategies themselves are the ultimate filter (volume, EMA cross,
+extension guards), so being too liberal here just means more no-op
+signal checks, not bad trades.
 """
+import json
+from pathlib import Path
+
 import config
 from logger_setup import get_logger
 
 
-def select_strategy(symbol: str, daily_row, gap_pct: float = 0.0,
-                    can_day_trade: bool = True) -> tuple:
-    """
-    Select the best strategy for a symbol.
+# Frontend IDs → bot internal strategy names
+_ID_TO_NAME = {
+    "ema_vwap": "EMA_VWAP",
+    "ema_vwap_short": "EMA_VWAP_SHORT",
+    "orb": "ORB",
+    "rsi_bounce": "RSI_BOUNCE",
+    "rsi_fade": "RSI_FADE",
+    "premarket_news": "PREMARKET_NEWS",
+}
 
-    Args:
-        symbol: stock ticker
-        daily_row: latest daily indicator row (pandas Series)
-        gap_pct: overnight gap as decimal (e.g. 0.02 for 2%)
-        can_day_trade: False if PDT limit reached
 
-    Returns:
-        (strategy_name: str, reason: str)
-    """
-    log = get_logger()
-
-    # ── PDT Override ──
-    if not can_day_trade:
-        return "RSI_BOUNCE", "PDT limit reached — swing only (RSI Bounce)"
-
-    # Need daily data for selection
-    if daily_row is None:
-        return "EMA_VWAP", "No daily data — defaulting to EMA+VWAP"
-
-    price = daily_row.get("Close", 0)
-    atr_val = daily_row.get("atr14", 0)
-
-    if price == 0:
-        return "EMA_VWAP", "No price data — defaulting to EMA+VWAP"
-
-    atr_pct = atr_val / price if atr_val else 0
-
-    # ── Gap Check → ORB ──
-    if abs(gap_pct) > config.SEL_GAP_PCT:
-        return "ORB", f"Gap {gap_pct*100:.2f}% > {config.SEL_GAP_PCT*100:.0f}% — ORB"
-
-    # ── Volatility Check ──
-    if atr_pct > config.SEL_ATR_PCT_HIGH:
-        return "EMA_VWAP", f"ATR% {atr_pct*100:.2f}% > 2% — EMA+VWAP momentum"
-
-    if atr_pct < config.SEL_ATR_PCT_LOW:
-        # Also check range
-        return "RSI_BOUNCE", f"ATR% {atr_pct*100:.2f}% < 1.5% — mean reversion"
-
-    return "EMA_VWAP", f"Default (ATR%={atr_pct*100:.2f}%) — EMA+VWAP"
+def load_disabled() -> set:
+    """Read frontend-disabled strategy IDs, translate to internal names."""
+    try:
+        path = Path(__file__).parent / "data" / "disabled_strategies.json"
+        if path.exists():
+            ids = set(json.loads(path.read_text()))
+            return {_ID_TO_NAME.get(i, i.upper()) for i in ids}
+    except Exception:
+        pass
+    return set()
 
 
 def get_applicable_strategies(symbol: str, daily_row, gap_pct: float = 0.0,
-                              can_day_trade: bool = True) -> list:
+                              can_day_trade: bool = True,
+                              bias: str = "neutral",
+                              shorts_enabled: bool = False) -> list:
     """
-    Return list of all applicable strategies for a symbol today.
-    Returns [(strategy_name, reason), ...]
+    Returns [(strategy_name, reason), ...] of strategies to evaluate.
     """
+    log = get_logger()
+    disabled = load_disabled()
+
+    # ── PDT override: swing only ──
     if not can_day_trade:
-        return [("RSI_BOUNCE", "PDT limit — swing only")]
+        out = [("RSI_BOUNCE", "PDT limit — swing long only")]
+        if shorts_enabled:
+            out.append(("RSI_FADE", "PDT limit — swing short available"))
+        return out
 
-    primary = select_strategy(symbol, daily_row, gap_pct, can_day_trade)
-    results = [primary]
+    out = []
 
-    # Always check RSI if not already primary
-    if primary[0] != "RSI_BOUNCE":
-        results.append(("RSI_BOUNCE", "Also checking RSI mean reversion"))
+    # ── Bias-driven primary selection ──
+    if bias == "long_pullback":
+        out.append(("RSI_BOUNCE", "Top loser — oversold-bounce candidate"))
+        out.append(("EMA_VWAP", "Also checking momentum recovery"))
 
-    # Check ORB if there's a notable gap and not already primary
-    if primary[0] != "ORB" and abs(gap_pct) > config.SEL_GAP_PCT * 0.7:
-        results.append(("ORB", f"Also checking ORB (gap {gap_pct*100:.2f}%)"))
+    elif bias == "short_fade" and shorts_enabled:
+        out.append(("RSI_FADE", "Top gainer — overbought-fade candidate"))
+        out.append(("EMA_VWAP_SHORT", "Also checking momentum breakdown"))
 
-    return results
+    elif bias == "long_momentum":
+        out.append(("EMA_VWAP", "Most-active — momentum candidate"))
+        if abs(gap_pct) > config.SEL_GAP_PCT:
+            out.append(("ORB", f"Gap {gap_pct*100:+.2f}% — also check ORB"))
+
+    else:  # neutral — old regime-based logic
+        if daily_row is None:
+            out.append(("EMA_VWAP", "No daily data — default momentum"))
+        else:
+            price = daily_row.get("Close", 0)
+            atr_val = daily_row.get("atr14", 0)
+            atr_pct = (atr_val / price) if price else 0
+
+            if abs(gap_pct) > config.SEL_GAP_PCT:
+                out.append(("ORB", f"Gap {gap_pct*100:+.2f}% > {config.SEL_GAP_PCT*100:.0f}%"))
+            if atr_pct > config.SEL_ATR_PCT_HIGH:
+                out.append(("EMA_VWAP", f"ATR% {atr_pct*100:.2f}% high → momentum"))
+            if atr_pct < config.SEL_ATR_PCT_LOW:
+                out.append(("RSI_BOUNCE", f"ATR% {atr_pct*100:.2f}% low → mean reversion"))
+            if not out:
+                out.append(("EMA_VWAP", f"Default (ATR%={atr_pct*100:.2f}%)"))
+
+        # Always also check RSI_BOUNCE and (if enabled) RSI_FADE on neutral
+        names = {s[0] for s in out}
+        if "RSI_BOUNCE" not in names:
+            out.append(("RSI_BOUNCE", "Always check oversold bounce"))
+        if shorts_enabled and "RSI_FADE" not in names:
+            out.append(("RSI_FADE", "Always check overbought fade"))
+
+    if disabled:
+        out = [(n, r) for (n, r) in out if n not in disabled]
+    return out
+
+
+# Back-compat shim for any caller still using the old signature
+def select_strategy(symbol, daily_row, gap_pct=0.0, can_day_trade=True):
+    apps = get_applicable_strategies(symbol, daily_row, gap_pct, can_day_trade)
+    return apps[0] if apps else ("EMA_VWAP", "default")

@@ -43,6 +43,11 @@ def check_signal(row) -> str:
         if volume < vol_ma * config.S1_VOLUME_THRESHOLD:
             return "NONE"
 
+        # Extension filter: don't chase. Reject if price already
+        # extended >5% above EMA21 (price has run; mean-reversion risk high)
+        if ema21 > 0 and (close - ema21) / ema21 > config.EXTENSION_MAX_PCT_ABOVE_EMA21:
+            return "NONE"
+
         return "BUY"
 
     # ── SHORT signal (disabled for $100 account) ──

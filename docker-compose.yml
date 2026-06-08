@@ -10,6 +10,7 @@ services:
     restart: always
     env_file: .env
     volumes:
+      - /root/stock-agent-live/.env:/app/.env:ro
       - bot-data:/app/data
       - bot-logs:/app/logs
     networks:

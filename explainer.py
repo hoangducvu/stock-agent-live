@@ -45,7 +45,7 @@ def explain_entry(symbol: str, strategy: str, side: str, price: float,
     ]
 
     # Strategy-specific indicator details
-    if strategy == "EMA_VWAP":
+    if strategy in ("EMA_VWAP", "EMA_VWAP_SHORT"):
         lines.extend([
             f"  {'─' * 40}",
             f"  Indicators:",
@@ -67,13 +67,14 @@ def explain_entry(symbol: str, strategy: str, side: str, price: float,
             f"    Volume:   {_iv(details.get('volume'))} "
             f"(MA: {_iv(details.get('vol_ma'))})",
         ])
-    elif strategy == "RSI_BOUNCE":
+    elif strategy in ("RSI_BOUNCE", "RSI_FADE"):
         lines.extend([
             f"  {'─' * 40}",
             f"  Indicators:",
             f"    RSI(7):   {_fv(details.get('rsi7'))}",
             f"    BB Lower: {_fv(details.get('bb_lower'))}",
             f"    BB Mid:   {_fv(details.get('bb_mid'))}",
+            f"    BB Upper: {_fv(details.get('bb_upper'))}",
             f"    SMA(50):  {_fv(details.get('sma50'))}",
         ])
 
