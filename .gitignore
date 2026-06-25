@@ -1,3 +1,15 @@
 .env
 .env.local
 .env.*.local
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Runtime data & secrets (encrypted account store, locks, bot state)
+data/*.json
+data/*.enc.json
+data/*.lock
+
+# Local logs
+logs/*.log
