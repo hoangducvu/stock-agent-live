@@ -1,22 +1,49 @@
 """
 Configuration — all parameters, thresholds, stock universe.
 Designed for LIVE trading with $100 micro account.
+
+Per-user overrides: this module is imported once per bot process, and the
+backend spawns one bot per account with the user's saved settings injected as
+CFG_* environment variables. The helpers below read those overrides at import
+time, falling back to the defaults here for standalone runs.
 """
+import os
 from datetime import time as dtime
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, ""))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(float(os.getenv(name, "")))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_list(name: str, default: list) -> list:
+    raw = os.getenv(name, "")
+    syms = [s.strip().upper() for s in raw.split(",") if s.strip()]
+    return syms or default
+
 
 # ─── Stock Universe ───────────────────────────────────────────────────────────
 TIER_1 = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
 TIER_2 = ["AMD", "INTC", "BAC", "F", "PLTR", "SOFI", "SNAP", "NIO"]
-STOCK_UNIVERSE = TIER_1 + TIER_2
+STOCK_UNIVERSE = _env_list("CFG_STOCK_UNIVERSE", TIER_1 + TIER_2)
 
 # ─── Account & Risk ──────────────────────────────────────────────────────────
 STARTING_CAPITAL = 100.0
-MAX_POSITION_PCT = 0.05            # 5% of portfolio per trade ($5 initially)
-MAX_CONCURRENT_POSITIONS = 3       # tight concentration for $100
-MAX_DAILY_LOSS_PCT = 0.02          # 2% daily loss → stop trading
+MAX_POSITION_PCT = _env_float("CFG_MAX_POSITION_PCT", 0.05)        # 5% of portfolio per trade
+MAX_CONCURRENT_POSITIONS = _env_int("CFG_MAX_CONCURRENT_POSITIONS", 3)
+MAX_DAILY_LOSS_PCT = _env_float("CFG_MAX_DAILY_LOSS_PCT", 0.02)    # 2% daily loss → stop trading
 MAX_DRAWDOWN_PCT = 0.10            # 10% drawdown → HALT bot
 HALT_THRESHOLD_VALUE = 90.0        # $90 absolute halt level
-MAX_ORDER_VALUE = 10.0             # hard cap: no single order > $10
+MAX_ORDER_VALUE = _env_float("CFG_MAX_ORDER_VALUE", 10.0)          # hard cap: no single order
 SANITY_MAX_BALANCE = 200.0         # refuse to start if account > $200
 
 # ─── PDT (Pattern Day Trader) ────────────────────────────────────────────────
@@ -56,6 +83,39 @@ S3_BB_STD = 2
 S3_SMA_PERIOD = 50
 S3_STOP_LOSS_PCT = 0.02            # 2% stop
 S3_MAX_HOLD_DAYS = 5
+
+# ─── Strategy 4: VWAP Breakdown Short (Intraday, 5-min) ──────────────────────
+# Bearish counterpart to S1: short when 9 EMA crosses below 21 EMA, price is
+# below the 55 EMA and below VWAP, on rising volume. PAPER ONLY by default.
+S4_STOP_ATR = 1.5                  # stop ABOVE entry for shorts
+S4_TP_ATR = 2.5                    # target BELOW entry
+S4_VOLUME_THRESHOLD = 1.2
+
+# ─── Strategy 5: News-Driven Sentiment (event, intraday) ─────────────────────
+# Pulls recent Alpaca news headlines for each symbol and scores sentiment with
+# the user's Anthropic key. Strong positive → long, strong negative → short.
+# PAPER ONLY by default. Needs ANTHROPIC_API_KEY injected by the backend.
+NEWS_LOOKBACK_HOURS = 24           # only consider headlines this fresh
+NEWS_MAX_ARTICLES = 8              # headlines per symbol sent to the model
+NEWS_SENTIMENT_THRESHOLD = 0.5     # |score| must exceed this to act (-1..1)
+NEWS_STOP_PCT = 0.02               # 2% stop from entry
+NEWS_TP_PCT = 0.04                 # 4% target from entry
+NEWS_MODEL = "claude-sonnet-4-6"
+
+# ─── Smarter sell-side exits (applies to all LONG positions) ─────────────────
+# Profit-lock: once a long is up >= activate%, exit if it gives back more than
+# giveback fraction of its peak gain. Complements per-strategy stops/targets.
+PROFIT_LOCK_ACTIVATE_PCT = 0.03    # arm after +3% unrealized
+PROFIT_LOCK_GIVEBACK = 0.40        # exit if 40% of peak gain is surrendered
+
+# ─── Daily Universal Scanner ─────────────────────────────────────────────────
+# At market open the bot scans a broad pool of liquid stocks and trades the
+# best-ranked names for the day instead of a fixed list. Per-user overridable.
+SCANNER_ENABLED = os.getenv("CFG_SCANNER_ENABLED", "true").lower() == "true"
+SCANNER_MAX_SYMBOLS = _env_int("CFG_SCANNER_MAX_SYMBOLS", 50)   # day's active universe size
+SCANNER_POOL_SIZE = _env_int("CFG_SCANNER_POOL_SIZE", 100)      # candidates to evaluate (Alpaca most-actives caps top=100)
+SCANNER_MIN_PRICE = _env_float("CFG_SCANNER_MIN_PRICE", 3.0)    # skip sub-$3 names
+SCANNER_MIN_DOLLAR_VOL = _env_float("CFG_SCANNER_MIN_DOLLAR_VOL", 5_000_000.0)
 
 # ─── Strategy Selection Thresholds ───────────────────────────────────────────
 SEL_ATR_PCT_HIGH = 0.02            # ATR% > 2% → S1

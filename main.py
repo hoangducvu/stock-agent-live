@@ -23,13 +23,27 @@ from order_manager import OrderManager
 from data_feed import DataFeed
 from utils import (
     now_et, fmt_price, fmt_pct, fmt_pnl, banner, separator,
-    green, red, yellow, cyan, bold, dim, ET
+    green, red, yellow, cyan, bold, dim, ET, bot_instance
 )
 import strategy_ema_vwap as s1
 import strategy_orb as s2
 import strategy_rsi as s3
+import strategy_vwap_short as s4
+import strategy_news as s5
 import strategy_selector
+import scanner
 import explainer
+import slack_notify
+
+# Each spawned bot process is scoped to a single strategy via the STRATEGY env
+# var (the backend spawns one process per selected strategy). Without this every
+# process would run all strategies and place duplicate orders. Map the env id to
+# the internal strategy name used by the engine.
+_STRATEGY_MAP = {
+    "ema_vwap": "EMA_VWAP", "orb": "ORB", "rsi": "RSI_BOUNCE",
+    "vwap_short": "VWAP_SHORT", "news": "NEWS",
+}
+BOT_STRATEGY = _STRATEGY_MAP.get(os.getenv("STRATEGY", "").strip().lower())
 
 
 # ─── Global State ────────────────────────────────────────────────────────────
@@ -43,6 +57,16 @@ env_config = None
 log = None
 _shutting_down = False
 _orb_computed = False
+
+# The day's active trading universe, chosen each morning by the scanner. Starts
+# as the configured universe so the bot works even before the first scan.
+ACTIVE_UNIVERSE = list(config.STOCK_UNIVERSE)
+SCAN_RESULTS = []   # [{symbol, score, price, gap_pct, range_pct, rel_volume, ...}]
+
+
+def _universe() -> list:
+    """Symbols the bot trades today (scanner-selected, or configured fallback)."""
+    return ACTIVE_UNIVERSE or list(config.STOCK_UNIVERSE)
 
 
 def main():
@@ -74,16 +98,29 @@ def main():
 
     # ── Step 4: Prevent duplicate instances via lockfile ──
     import atexit
-    _lock_path = Path(__file__).parent / "data" / ".bot.lock"
+    # Per-instance lock so independent bots (one per user+strategy, spawned by
+    # the backend) don't block one another on a single shared lockfile.
+    # BOT_INSTANCE is "<account_id>:<strategy>"; ':' isn't valid in filenames.
+    _instance = bot_instance()
+    _lock_path = Path(__file__).parent / "data" / f".bot.{_instance}.lock"
     _lock_path.parent.mkdir(exist_ok=True)
     if _lock_path.exists():
         try:
             old_pid = int(_lock_path.read_text().strip())
             import psutil
-            if psutil.pid_exists(old_pid):
-                print(f"\n  {red(bold('*** ALREADY RUNNING (PID {old_pid}) ***'))}")
-                print(f"  {red('Send !stop first, or the previous process will conflict.')}\n")
-                sys.exit(1)
+            # Only treat the lock as live if the PID belongs to a *python*
+            # process. A bare pid_exists() check is unreliable on Windows:
+            # PIDs get reused, and PID 4 is always the System process — a
+            # corrupt/stale lock pointing there would block startup forever.
+            if old_pid != os.getpid() and psutil.pid_exists(old_pid):
+                try:
+                    proc_name = psutil.Process(old_pid).name().lower()
+                except Exception:
+                    proc_name = ""
+                if "python" in proc_name:
+                    print(f"\n  {red(bold(f'*** ALREADY RUNNING (PID {old_pid}) ***'))}")
+                    print(f"  {red('Send !stop first, or the previous process will conflict.')}\n")
+                    sys.exit(1)
         except Exception:
             pass  # stale lock — proceed
     _lock_path.write_text(str(os.getpid()))
@@ -102,9 +139,28 @@ def main():
     order_mgr = OrderManager(api, risk_mgr, acct_mgr)
     data_feed = DataFeed(api)
 
-    # ── Step 6: Startup validation ──
+    # ── Step 6: Startup validation (with retry/backoff) ──
+    # A transient outage or a credential that was just being (re)validated in the
+    # dashboard shouldn't kill the bot for the whole day. Retry a few times with
+    # exponential backoff and alert Slack on each failure so the problem surfaces
+    # loudly instead of dying silently in the log.
     mode = env_config["trading_mode"]
-    ok, messages = acct_mgr.validate_startup(trading_mode=mode)
+    _MAX_VALIDATE_ATTEMPTS = 5
+    ok, messages = False, []
+    for attempt in range(1, _MAX_VALIDATE_ATTEMPTS + 1):
+        ok, messages = acct_mgr.validate_startup(trading_mode=mode)
+        if ok:
+            break
+        reason = "; ".join(messages) or "unknown error"
+        log.error(f"Startup validation failed (attempt {attempt}/{_MAX_VALIDATE_ATTEMPTS}): {reason}")
+        slack_notify.notify_alert(
+            f"Bot startup validation failed (attempt {attempt}/{_MAX_VALIDATE_ATTEMPTS})",
+            f"{reason} — mode: {mode}. "
+            + ("Retrying…" if attempt < _MAX_VALIDATE_ATTEMPTS else "Giving up; bot will not start."),
+        )
+        if attempt < _MAX_VALIDATE_ATTEMPTS:
+            # 5s, 10s, 20s, 40s — capped — gives a just-(re)validated key time to propagate.
+            time.sleep(min(config.API_RETRY_DELAY * (2 ** (attempt - 1)), 60))
     if not ok:
         print(f"\n  {red(bold('*** STARTUP VALIDATION FAILED ***'))}")
         for msg in messages:
@@ -131,14 +187,10 @@ def main():
     if not acct_mgr.is_trading_day():
         print(f"  {yellow('Today is not a trading day. Bot will wait.')}")
 
-    # ── Step 11: Download historical data ──
-    print(f"\n  {cyan('Downloading historical data...')}")
-    data_feed.download_historical(config.STOCK_UNIVERSE)
-    data_feed.compute_indicators(config.STOCK_UNIVERSE)
+    # ── Step 11+12: Scan for the day's best stocks, then load their data ──
+    print(f"\n  {cyan('Scanning market for the best stocks to trade...')}")
+    run_daily_scan()
     print(f"  {green('Data and indicators ready.')}\n")
-
-    # ── Step 12: Calculate gaps ──
-    data_feed.calculate_gaps(config.STOCK_UNIVERSE)
 
     # ── Step 12b: Reconcile pre-existing broker positions ──
     # The bot only tracks positions it opened in this process. After a
@@ -158,6 +210,13 @@ def main():
         pre_market_prep, "cron",
         day_of_week="mon-fri", hour=9, minute=15,
         id="pre_market",
+    )
+
+    # Market open: scan the broad pool and pick today's stocks at 9:30 AM
+    scheduler.add_job(
+        run_daily_scan, "cron",
+        day_of_week="mon-fri", hour=9, minute=30,
+        id="daily_scan",
     )
 
     # Main trading loop: every 5 minutes during market hours
@@ -217,6 +276,36 @@ def main():
 
 # ─── Scheduled Functions ─────────────────────────────────────────────────────
 
+def run_daily_scan():
+    """Scan the broad pool and set today's active trading universe, then load
+    data/indicators/gaps for the chosen names. Safe to call repeatedly."""
+    global ACTIVE_UNIVERSE, SCAN_RESULTS
+    try:
+        symbols, results = scanner.scan_for_day(
+            seed=config.STOCK_UNIVERSE, max_symbols=config.SCANNER_MAX_SYMBOLS
+        )
+    except Exception as e:
+        log.error(f"Scanner failed ({e}); keeping current universe")
+        symbols, results = _universe(), SCAN_RESULTS
+
+    if not symbols:
+        symbols = list(config.STOCK_UNIVERSE)
+
+    ACTIVE_UNIVERSE = symbols
+    SCAN_RESULTS = results
+    print(f"\n  {cyan(bold('DAILY SCAN'))} — trading {len(symbols)} stocks today: "
+          f"{green(', '.join(symbols))}")
+
+    # Push the day's trade list to Slack (best-effort; no-op if Slack disabled).
+    slack_notify.notify_daily_plan(symbols, results)
+
+    # Load data for the freshly chosen universe
+    data_feed.download_historical(symbols)
+    data_feed.compute_indicators(symbols)
+    data_feed.calculate_gaps(symbols)
+    _write_state()
+
+
 def pre_market_prep():
     """9:15 AM — download fresh data, calculate gaps, print briefing."""
     global _orb_computed
@@ -225,16 +314,16 @@ def pre_market_prep():
     log.info("=== PRE-MARKET PREP (9:15 AM) ===")
     print(f"\n  {cyan(bold('PRE-MARKET PREP — 9:15 AM'))}")
 
-    # Refresh daily data
-    data_feed.download_historical(config.STOCK_UNIVERSE)
-    data_feed.compute_indicators(config.STOCK_UNIVERSE)
+    # Refresh daily data for the current active universe
+    data_feed.download_historical(_universe())
+    data_feed.compute_indicators(_universe())
 
     # Reset daily risk
     portfolio_value = acct_mgr.get_portfolio_value()
     risk_mgr.init_daily(portfolio_value)
 
     # Calculate gaps
-    data_feed.calculate_gaps(config.STOCK_UNIVERSE)
+    data_feed.calculate_gaps(_universe())
 
     # Print daily briefing
     pdt_count = acct_mgr.get_day_trade_count()
@@ -257,9 +346,9 @@ def compute_orb():
 
     # Poll the latest bar per symbol, then backfill the full 9:25-10:05
     # window for any symbol that missed bars (IEX delay or late tick).
-    data_feed.poll_latest_bars(config.STOCK_UNIVERSE)
-    data_feed.download_opening_range_bars(config.STOCK_UNIVERSE)
-    data_feed.compute_opening_ranges(config.STOCK_UNIVERSE)
+    data_feed.poll_latest_bars(_universe())
+    data_feed.download_opening_range_bars(_universe())
+    data_feed.compute_opening_ranges(_universe())
     _orb_computed = True
 
     n = len(data_feed.opening_ranges)
@@ -285,7 +374,7 @@ def trading_tick():
 
     # ── Poll latest bars ──
     try:
-        new_bars = data_feed.poll_latest_bars(config.STOCK_UNIVERSE)
+        new_bars = data_feed.poll_latest_bars(_universe())
         if new_bars:
             log.debug(f"  Got {len(new_bars)} new bars")
     except Exception as e:
@@ -329,8 +418,41 @@ def _check_exits():
             bars_held = (now_et().date() - entry_dt.date()).days
             should_exit, reason = s3.check_exit(pos, row, bars_held)
 
+        elif pos.strategy == "VWAP_SHORT":
+            row = data_feed.get_latest_5m(symbol)
+            should_exit, reason = s4.check_exit(pos, row)
+
+        elif pos.strategy == "NEWS":
+            should_exit, reason = s5.check_exit(pos, data_feed.get_last_price(symbol))
+
+        # Smarter sell-side overlay: profit-lock on LONG positions across all
+        # strategies — give back only part of the peak gain before exiting.
+        if not should_exit and pos.side != "short":
+            price_now = data_feed.get_last_price(symbol)
+            if price_now > 0:
+                risk_mgr.update_high_water(symbol, price_now)
+                locked, lock_reason = _profit_lock_exit(pos, price_now)
+                if locked:
+                    should_exit, reason = True, lock_reason
+
         if should_exit:
             _execute_exit(symbol, reason)
+
+
+def _profit_lock_exit(pos, price: float) -> tuple:
+    """Exit a long if it has armed (>= activate% gain) then surrendered more than
+    PROFIT_LOCK_GIVEBACK of its peak gain. Returns (should_exit, reason)."""
+    entry = pos.entry_price
+    peak = pos.high_water or entry
+    if entry <= 0 or peak <= entry:
+        return False, ""
+    peak_gain_pct = (peak - entry) / entry
+    if peak_gain_pct < config.PROFIT_LOCK_ACTIVATE_PCT:
+        return False, ""  # not yet armed
+    cur_gain_pct = (price - entry) / entry
+    if cur_gain_pct <= peak_gain_pct * (1 - config.PROFIT_LOCK_GIVEBACK):
+        return True, "profit_lock"
+    return False, ""
 
 
 def _scan_entries():
@@ -344,7 +466,7 @@ def _scan_entries():
         return
 
     # Prioritize Tier 1 stocks first
-    scan_order = config.TIER_1 + config.TIER_2
+    scan_order = _universe()
 
     for symbol in scan_order:
         # Re-check capacity each iteration (may have filled a position)
@@ -364,7 +486,10 @@ def _scan_entries():
         )
 
         for strat_name, strat_reason in strategies:
+            if BOT_STRATEGY and strat_name != BOT_STRATEGY:
+                continue  # this process only trades its assigned strategy
             signal = "NONE"
+            score = 0.0
 
             if strat_name == "EMA_VWAP":
                 if not can_dt:
@@ -386,13 +511,25 @@ def _scan_entries():
             elif strat_name == "RSI_BOUNCE":
                 signal = s3.check_signal(daily_row)
 
+            elif strat_name == "VWAP_SHORT":
+                if not can_dt:
+                    continue  # intraday short, need PDT clearance
+                row = data_feed.get_latest_5m(symbol)
+                signal = s4.check_signal(row)
+
+            elif strat_name == "NEWS":
+                signal, score = s5.evaluate(api, symbol)
+
             if signal == "BUY":
-                _execute_entry(symbol, strat_name)
+                _execute_entry(symbol, strat_name, side="long", score=score)
                 break  # one entry per symbol per tick
+            elif signal == "SHORT":
+                _execute_entry(symbol, strat_name, side="short", score=score)
+                break
 
 
-def _execute_entry(symbol: str, strategy: str):
-    """Execute a buy entry for a symbol."""
+def _execute_entry(symbol: str, strategy: str, side: str = "long", score: float = 0.0):
+    """Execute an entry (long buy or short sell-to-open) for a symbol."""
     price = data_feed.get_last_price(symbol)
     if price <= 0:
         return
@@ -401,6 +538,9 @@ def _execute_entry(symbol: str, strategy: str):
     qty, dollar_amount = risk_mgr.calc_position_size(price)
     if qty <= 0:
         return
+
+    atr_val = 0
+    trail = None
 
     # Calculate stops
     if strategy == "EMA_VWAP":
@@ -414,14 +554,22 @@ def _execute_entry(symbol: str, strategy: str):
         orb = data_feed.opening_ranges.get(symbol, {})
         row = data_feed.get_latest_5m(symbol)
         sl, tp = s2.calc_stops(price, orb)
-        trail = None
         details = s2.entry_details(row, orb)
     elif strategy == "RSI_BOUNCE":
         daily_row = data_feed.get_latest_daily(symbol)
         sl = s3.calc_stops(price)
         tp = None  # exits via RSI/BB, not fixed target
-        trail = None
         details = s3.entry_details(daily_row)
+    elif strategy == "VWAP_SHORT":
+        row = data_feed.get_latest_5m(symbol)
+        atr_val = row.get("atr", 0) if row is not None else 0
+        if atr_val <= 0:
+            return
+        sl, tp = s4.calc_stops(price, atr_val)
+        details = s4.entry_details(row)
+    elif strategy == "NEWS":
+        sl, tp = s5.calc_stops(price, side)
+        details = s5.entry_details(symbol, score)
     else:
         return
 
@@ -433,7 +581,7 @@ def _execute_entry(symbol: str, strategy: str):
 
     # Print entry explanation
     explainer.explain_entry(
-        symbol=symbol, strategy=strategy, side="long",
+        symbol=symbol, strategy=strategy, side=side,
         price=price, qty=qty, stop_loss=sl,
         take_profit=tp, details=details,
         risk_dollars=risk_dollars, risk_pct=risk_pct,
@@ -441,12 +589,17 @@ def _execute_entry(symbol: str, strategy: str):
         confidence=confidence,
     )
 
-    # Submit order
-    result = order_mgr.submit_buy(
-        symbol=symbol, qty=qty, price=price,
-        strategy=strategy, stop_loss=sl, take_profit=tp,
-        trail_activate=trail,
-    )
+    # Submit order — sell-to-open for shorts, limit buy for longs
+    if side == "short":
+        result = order_mgr.submit_short(
+            symbol=symbol, qty=qty, price=price, strategy=strategy, stop_loss=sl,
+        )
+    else:
+        result = order_mgr.submit_buy(
+            symbol=symbol, qty=qty, price=price,
+            strategy=strategy, stop_loss=sl, take_profit=tp,
+            trail_activate=trail,
+        )
 
     if result and result["filled"]:
         fill_price = result["fill_price"]
@@ -455,10 +608,14 @@ def _execute_entry(symbol: str, strategy: str):
         # Recalculate stops with actual fill price
         if strategy == "EMA_VWAP":
             sl, tp, trail = s1.calc_stops(fill_price, atr_val)
+        elif strategy == "VWAP_SHORT":
+            sl, tp = s4.calc_stops(fill_price, atr_val)
+        elif strategy == "NEWS":
+            sl, tp = s5.calc_stops(fill_price, side)
 
         pos = LivePosition(
             symbol=symbol,
-            side="long",
+            side=side,
             entry_price=fill_price,
             qty=filled_qty,
             entry_time=now_et().strftime("%Y-%m-%d %H:%M:%S"),
@@ -471,6 +628,7 @@ def _execute_entry(symbol: str, strategy: str):
             entry_value=fill_price * filled_qty,
         )
         risk_mgr.record_entry(pos)
+        slack_notify.notify_entry(symbol, strategy, filled_qty, fill_price, sl, tp)
         _write_state()
 
 
@@ -481,9 +639,14 @@ def _execute_exit(symbol: str, reason: str):
     if not pos or price <= 0:
         return
 
-    result = order_mgr.submit_sell(
-        symbol=symbol, qty=pos.qty, price=price, reason=reason
-    )
+    if pos.side == "short":
+        result = order_mgr.submit_cover(
+            symbol=symbol, qty=pos.qty, price=price, reason=reason
+        )
+    else:
+        result = order_mgr.submit_sell(
+            symbol=symbol, qty=pos.qty, price=price, reason=reason
+        )
 
     if result and result["filled"]:
         exit_price = result["fill_price"]
@@ -504,6 +667,7 @@ def _execute_exit(symbol: str, reason: str):
                 qty=pos.qty, pnl=trade.pnl, pnl_pct=trade.pnl_pct,
                 reason=reason, hold_time=hold_str,
             )
+            slack_notify.notify_exit(symbol, pos.strategy, pos.qty, exit_price, trade.pnl, reason)
             _write_state()
 
 
@@ -556,6 +720,9 @@ def _sync_existing_positions():
             trail = None
             trail_atr = None
 
+        if BOT_STRATEGY and strategy != BOT_STRATEGY:
+            continue  # let the process that owns this strategy adopt it
+
         pos = LivePosition(
             symbol=symbol,
             side="long",
@@ -606,6 +773,7 @@ def end_of_day_summary():
     trades = risk_mgr.trades_today
     wins = [t for t in trades if t.pnl > 0]
     losses = [t for t in trades if t.pnl <= 0]
+    slack_notify.notify_eod(len(trades), len(wins), len(losses), daily_pnl)
 
     banner("END OF DAY SUMMARY")
     print(f"  Portfolio Value: {fmt_price(portfolio_value)}")
@@ -703,11 +871,14 @@ def _write_state():
             "halted": risk_mgr.is_halted() or risk_mgr.is_daily_halted(),
             "open_positions": positions,
             "trades_today": trades,
-            "stock_universe": config.STOCK_UNIVERSE,
+            "stock_universe": _universe(),
+            "scanned_today": SCAN_RESULTS,
             "strategies": {
                 "EMA_VWAP": "Intraday 5-min momentum using EMA(9/21/55) crossover above VWAP with ATR stops",
                 "ORB": "Intraday opening range breakout — buys breakout above first-30min high after 10am",
                 "RSI_BOUNCE": "Swing trade mean reversion — buys when daily RSI(7) < 25 near lower Bollinger Band",
+                "VWAP_SHORT": "Intraday short — sells short on EMA breakdown below VWAP/55-EMA with ATR stops (paper only)",
+                "NEWS": "Event-driven — scores Alpaca headlines with AI sentiment; long on strong positive, short on strong negative (paper only)",
             },
             "risk_limits": {
                 "max_position_pct": config.MAX_POSITION_PCT,
@@ -717,7 +888,9 @@ def _write_state():
             },
         }
 
-        state_path = Path(__file__).parent / config.DATA_DIR / "bot_state.json"
+        # Per-instance state file so each account+strategy bot has its own —
+        # the backend reads these per account and never mixes users' data.
+        state_path = Path(__file__).parent / config.DATA_DIR / f"bot_state.{bot_instance()}.json"
         state_path.parent.mkdir(exist_ok=True)
         with open(state_path, "w") as f:
             json.dump(state, f, indent=2)
