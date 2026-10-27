@@ -1,0 +1,8 @@
+src/data/
+src/logs/
+**/__pycache__/
+**/*.pyc
+**/.env
+**/*.sqlite3*
+deployment-review/backups/
+.git/

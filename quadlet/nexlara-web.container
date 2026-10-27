@@ -1,0 +1,14 @@
+[Unit]
+Description=Nexlara web app (loopback only)
+Requires=nexlara-api.service
+After=nexlara-api.service
+[Container]
+Image=localhost/nexlara-web:oracle
+ContainerName=nexlara-web
+Network=nexlara.network
+PublishPort=127.0.0.1:8080:80
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+[Install]
+WantedBy=default.target

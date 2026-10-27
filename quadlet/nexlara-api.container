@@ -1,0 +1,15 @@
+[Unit]
+Description=Nexlara API
+[Container]
+Image=localhost/nexlara-api:oracle
+ContainerName=nexlara-api
+Network=nexlara.network
+Volume=nexlara-data.volume:/app/data:Z
+Volume=nexlara-logs.volume:/app/logs:Z
+Environment=BOT_SCRIPT=/app/main.py
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+TimeoutStopSec=90
+[Install]
+WantedBy=default.target

@@ -1,0 +1,19 @@
+{
+	admin off
+}
+
+nexlara.eu {
+	# Protect the entire website and every API endpoint.
+	basic_auth {
+		nexlara PASSWORD_HASH
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		Cache-Control "no-store"
+	}
+	reverse_proxy 127.0.0.1:8080 {
+		# The application does not need the site's login credential.
+		header_up -Authorization
+	}
+}

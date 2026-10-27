@@ -1,3 +1,22 @@
+# Runtime credentials, account records, caches and host backups
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.key
+*.pem
+*.sqlite3*
+*.db
+*.log
+*.pyc
+__pycache__/
+.venv/
+venv/
+src/data/
+src/logs/
+data/
+logs/
+deployment-review/
+*.tar.gz
+*.zip
+login.txt
+Caddyfile

@@ -1,0 +1,23 @@
+[Unit]
+Description=Nexlara authenticated HTTPS gateway
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Container]
+Image=CADDY_IMAGE_DIGEST
+ContainerName=nexlara-edge
+# Rootful host networking reaches the existing rootless loopback frontend.
+Network=host
+Volume=/etc/nexlara-edge/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+Volume=/var/lib/nexlara-edge/data:/data:Z
+Volume=/var/lib/nexlara-edge/config:/config:Z
+LogDriver=journald
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
