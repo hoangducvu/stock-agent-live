@@ -20,7 +20,7 @@ UNIVERSE_POLICY = 'all_active_tradable_us_equities'
 
 class ResearchWorker:
     def __init__(self,db,config,data,evidence,provider,scope):
-        self.db=db;self.config=config;self.data=data;self.evidence=evidence;self.scope=scope
+        self.db=db;self.config=config;self.data=data;self.evidence=evidence;self.scope=scope;self.provider=provider
         self.calendar=ExchangeCalendar(data.calendar,db);self.ai=AIService(db,config,provider)
         if config.prototype:
             from .company import CachedEvidence,CompanyResearch
@@ -142,11 +142,32 @@ class ResearchWorker:
             from types import SimpleNamespace
             screening_policy=replace(self.config,require_fundamentals=False,require_earnings=False)
             screening_evidence=SimpleNamespace(get=lambda *_:None)
+        # In managed batch mode, retain EVERY technical qualifier for one comparison.
+        batch_mode=self.config.prototype and self.config.batch_review and task=='premarket'
+        if batch_mode:
+            from dataclasses import replace
+            screening_policy=replace(screening_policy,candidates=max(1,len(summaries)))
         candidates,rejections=screen(summaries,screening_evidence,screening_policy,now)
+        batch_pool=list(candidates) if batch_mode else []
+        if batch_mode:
+            from .shortlist import BatchShortlist
+            metadata=getattr(self.data,'asset_metadata',{})
+            for row in batch_pool:
+                row['instrument_hint']=(metadata.get(row['ticker'],{}).get('instrument_hint','unknown') if isinstance(metadata,dict) else 'unknown')
+            comparison=BatchShortlist(self.db,self.config,self.provider,self.scope).select(batch_pool,now,benchmark)
+            selected=set(comparison['selected'])
+            by_ticker={r['ticker']:r for r in batch_pool}
+            candidates=[by_ticker[s] for s in comparison['selected']]
+            for row in batch_pool:
+                if row['ticker'] not in selected:
+                    rejections.append(dict(ticker=row['ticker'],reasons=['batch_not_selected'],reason_details=[dict(code='batch_not_selected',
+                        message=('Compared in the AI batch; not selected for the limited company-research slots.' if comparison['status']=='complete' else
+                                 'Company research was not started: '+comparison['detail']))],score=row['score']))
         technical=dict(screened=len(universe),available=len(summaries),
                        candidates=candidates,rejections=rejections,expected_session=expected,
                        data_rejections=data_rejections,held_exclusions=held_exclusions,
-                       qualified=len(candidates)+sum(r['reasons']==['shortlist_limit'] for r in rejections),
+                       qualified=len(batch_pool) if batch_mode else len(candidates)+sum(r['reasons']==['shortlist_limit'] for r in rejections),
+                       selection_mode='ai_batch' if batch_mode else 'technical_score',
                        shortlist_limit=self.config.candidates,policy=UNIVERSE_POLICY)
         self.db.put('technical_screening',key+':'+task,technical)
         if task=='premarket':self.db.put('technical_screening',key,technical)
@@ -226,7 +247,7 @@ class ResearchWorker:
             summary=(empty_summary(diagnostic) if task=='premarket' else
                      'No evidence-complete candidates or reviewable holdings were available for the postmarket review; final AI ranking was skipped.')
             self.db.put('daily_report',key+':'+task,dict(recommendations=[],summary=summary,
-                        status='research_failed' if task=='premarket' and any(r['status'] in {'rejected','provider_failed'} for r in diagnostic['company_results']) else 'no_candidates'))
+                        status='research_failed' if task=='premarket' and (any(r['status'] in {'rejected','provider_failed'} for r in diagnostic['company_results']) or (batch_mode and comparison['status'] not in {'complete','no_candidates'})) else 'no_candidates'))
             self.db.put('daily_summary',key,dict(screened=len(universe),candidates=0,watchlist=0,usage=self.db.usage(day)))
             return True
         # Bound the batch to configured token ceiling; persist omitted candidates.

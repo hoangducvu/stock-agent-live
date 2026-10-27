@@ -13,13 +13,16 @@ class ModelReply:
 class Provider(Protocol):
     def complete(self,system:str,payload:str,max_output:int)->ModelReply:...
     def research_company(self,system:str,payload:str,max_output:int)->ModelReply:...
+    def shortlist(self,system:str,payload:str,max_output:int,schema:dict)->ModelReply:...
 class AnthropicProvider:
     def __init__(self,config,api_key=None,managed=False):self.config=config;self.api_key=api_key;self.managed=managed
     def complete(self,system,payload,max_output):
         return self._request(system,payload,max_output)
     def research_company(self,system,payload,max_output):
         return self._request(system,payload,max_output,search=True)
-    def _request(self,system,payload,max_output,search=False):
+    def shortlist(self,system,payload,max_output,schema):
+        return self._request(system,payload,max_output,schema=schema)
+    def _request(self,system,payload,max_output,search=False,schema=None):
         import anthropic
         key=self.api_key
         if self.managed:
@@ -32,6 +35,7 @@ class AnthropicProvider:
         # Explicit retries=0: ambiguous calls remain charged/reserved and never fan out.
         client=anthropic.Anthropic(api_key=key,timeout=max(60,self.config.timeout) if search else self.config.timeout,max_retries=0)
         options={"tools":[{"type":"web_search_20250305","name":"web_search","max_uses":self.config.searches_per_company}]} if search else {}
+        if schema is not None:options['output_config']={'format':{'type':'json_schema','schema':schema}}
         response=client.messages.create(model=self.config.model,max_tokens=max_output,
             system=system,messages=[{'role':'user','content':payload}],**options)
         texts=[part.text for part in response.content if part.type=='text']

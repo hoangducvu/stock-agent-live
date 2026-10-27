@@ -486,3 +486,43 @@ Informational round-trip logs are now scoped to the broker account; the old
 unscoped `pdt_day_trades.json` is retained on disk and is not imported into a
 new account. Historical broker closing summaries remain scoped to the selected
 paper account; changing accounts intentionally changes the displayed history.
+
+
+### Compare the full technical pool before company research
+
+Managed prototype research now defaults to `AI_BATCH_REVIEW_ENABLED=true`.
+The worker screens the complete broker universe locally, then sends **every
+technical qualifier** in one compact preliminary AI prompt. It supplies ticker,
+price, 20-day return, return versus SPY, RSI, ATR/price, dollar volume and distance
+above the 200-day average. Asset names supply an explicitly labeled fund hint;
+fund-name matches stay in coverage but cannot take company-financials slots.
+The model must use the supplied metrics rather than invent company facts from
+its memory. Outlier returns are flagged for possible corporate-action/data issues.
+
+The comparison returns up to **five ranked research priorities**, with reasons
+and risks. Up to the first **three** receive the existing sourced company research.
+A low technical-score candidate can now be selected ahead of the old top three.
+This comparison is not a BUY decision: verified financial/earnings evidence,
+final AI ranking, deterministic signals and all execution risk checks still apply.
+Intraday scalping remains independent of this research pipeline.
+
+The tool-free comparison uses [Anthropic structured JSON output](https://platform.claude.com/docs/en/build-with-claude/structured-outputs),
+with local checks for input coverage, unknown/duplicate tickers, fund selections,
+truncated responses and field limits. Each account/model gets at most one paid
+comparison attempt per day, including failed/uncertain calls. Identical inputs
+reuse a persisted result; changed inputs do not silently reuse old picks or
+trigger another charge. Complete inputs, results, reasons, usage and selection
+counts are stored and shown in Research diagnostics. No credentials enter prompts.
+
+A synthetic 124-candidate table fits within the existing 12,000-token conservative
+request bound. If a complete table is too large, no rows are silently dropped:
+the comparison is blocked with an explicit diagnostic and no paid request.
+The existing **$0.20/day, eight-call and six-search limits** remain; comparison
+cost counts against the same ledger and may reduce available detailed research.
+Company reports now have 2,400 output tokens (formerly 1,200) and a more compact
+requested report, retaining the two-search limit and strict evidence validation.
+
+This flow applies to the next scheduled premarket research run after deployment.
+Installing the code does not delete today's failed attempts, reset its AI budget,
+re-run already completed jobs or start the trading engine. Standalone mode can
+opt into this flow with `AI_PROTOTYPE_MODE=true` and `AI_BATCH_REVIEW_ENABLED=true`.

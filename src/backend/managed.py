@@ -265,7 +265,7 @@ async def readiness():
     if policy.enabled:
         check('AI provider configuration', bool(values.get('ai_api_key')), 'AI-dependent entries require a configured provider key; missing credentials block new entries.')
         if policy.prototype:
-            check('Prototype company research', True, 'Up to three candidates, two web searches each, seven-day cache and $0.20/day estimated budget. Missing or unverified evidence blocks swing entries; scalping is independent of AI.', blocking=False)
+            check('Prototype company research', True, 'One preliminary AI comparison of the complete technical pool, then up to three companies with two web searches each, seven-day cache and the existing $0.20/day estimated budget. Missing or unverified evidence blocks swing entries; scalping is independent of AI.', blocking=False)
         elif policy.require_fundamentals or policy.require_earnings:
             evidence=os.getenv('AI_EVIDENCE_FILE','')
             check('Research evidence feed', bool(evidence and Path(evidence).is_file()), 'A dated fundamentals/earnings evidence feed must be available to the worker.')
@@ -325,7 +325,7 @@ async def research_status():
             report['payload']={**report['payload'],'summary':empty_summary(diagnostics)}
     return dict(enabled=config.enabled,provider=config.provider,model=config.model,
                 credentials_configured=bool(values.get('ai_api_key')),
-                prototype=config.prototype,daily_budget=config.dollars,max_candidates=config.candidates,
+                prototype=config.prototype,batch_review=config.batch_review,daily_budget=config.dollars,max_candidates=config.candidates,
                 max_searches=6 if config.prototype else 0,cache_days=config.company_cache_days,
                 evidence_configured=bool(__import__('os').getenv('AI_EVIDENCE_FILE') and Path(__import__('os').getenv('AI_EVIDENCE_FILE')).is_file()),
                 usage=db.usage(day),watchlist=db.get('watchlist',identity+':'+day) or {},

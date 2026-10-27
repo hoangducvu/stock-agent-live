@@ -24,6 +24,7 @@ class ResearchConfig:
     buying_power_reserve_pct: float = 5.0
     max_positions: int = 3
     prototype: bool = False
+    batch_review: bool = False
     search_reserve_tokens: int = 20000
     company_cache_days: int = 7
     searches_per_company: int = 2
@@ -92,7 +93,7 @@ class ResearchConfig:
         from dataclasses import replace
         prototype=flag('AI_PROTOTYPE_MODE', settings is not None)
         if prototype:
-            c=replace(c,prototype=True,validation=False,candidates=3,
+            c=replace(c,prototype=True,batch_review=flag('AI_BATCH_REVIEW_ENABLED', settings is not None),validation=False,candidates=3,
                       calls=min(c.calls,8),dollars=min(c.dollars,.20),
                       search_reserve_tokens=20000,company_cache_days=7,searches_per_company=2)
         from datetime import time

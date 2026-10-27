@@ -11,6 +11,7 @@ def research_diagnostics(db, scope, model, day):
     progress=db.get('scan_progress',key)
     screening=db.get('premarket_screening',key) or db.get('screening',key) or {}
     technical=db.get('technical_screening',key)
+    batch=db.get('batch_shortlist',key)
     prefix=scope+':'+model+':'
     results={}
     # Do not expire audit history or infer discarded response contents.
@@ -46,7 +47,7 @@ def research_diagnostics(db, scope, model, day):
                 'They were outside the saved research universe, so no screening verdict exists for them.')
         messages.append('Core watchlist symbols not scanned: '+', '.join(coverage['core_not_scanned'])+'. '+suffix)
     if selection.get('policy')=='all_active_tradable_us_equities':
-        messages.append('All active, tradable US equities returned by Alpaca are included. No alphabetical cutoff or exchange whitelist is applied. Technical filters rank the shortlist before paid AI research.')
+        messages.append('All active, tradable US equities returned by Alpaca are included. No alphabetical cutoff or exchange whitelist is applied. '+('The complete technical pool is submitted for preliminary AI comparison before company research.' if batch else 'Technical filters rank the shortlist before paid AI research.'))
     elif universe and universe==sorted(universe) and not technical:
         messages.append('The saved universe is alphabetically ordered. The historical default capped the sorted asset list before screening.')
     if progress and progress.get('status')=='failed':
@@ -67,10 +68,15 @@ def research_diagnostics(db, scope, model, day):
         shortlist.sort(key=lambda r:-(r.get('score') or 0))
     return dict(coverage=coverage,messages=messages,shortlist=shortlist,
                 company_results=list(results.values()),screening=screening,
-                technical_screening=technical,scan_progress=progress,selection_rule='Technical score = relative return versus SPY × 100 + min(20-day return × 100, 20) + (price / 200-day average − 1) × 10 − ATR/price × 100. Highest scores across the complete scanned universe receive the limited research slots; ties use ticker order.')
+                technical_screening=technical,batch_review=batch,scan_progress=progress,selection_rule=('AI batch comparison selects company-research slots from the full technical pool; technical scores are screening context, not the final selection order.' if batch else 'Technical score = relative return versus SPY × 100 + min(20-day return × 100, 20) + (price / 200-day average − 1) × 10 − ATR/price × 100. Highest scores across the complete scanned universe receive the limited research slots; ties use ticker order.'))
 
 
 def empty_summary(diagnostic):
+    batch=diagnostic.get('batch_review')
+    if batch and batch['status']!='complete':
+        return 'Preliminary AI batch comparison did not complete. '+batch.get('detail','No company research was started.')+' Final trade approval was skipped.'
+    if batch and not batch.get('selected'):
+        return f"AI compared {batch.get('reviewed_count',0)} technical candidates and selected none for company research. No trade approvals were made."
     outcomes=diagnostic['company_results']
     failed=[r for r in outcomes if r['status'] in {'rejected','provider_failed'}]
     if failed:

@@ -237,7 +237,13 @@ function renderResearchDiagnostics(diagnostic,container){
   const progress=diagnostic.scan_progress;
   if(progress)add(`Market-data scan: ${progress.status} · ${progress.processed}/${progress.total} symbols processed · ${progress.available} usable summaries · ${progress.data_rejected} unavailable or invalid · ${progress.held_excluded} already held.`);
   const technical=diagnostic.technical_screening;
-  if(technical?.qualified!=null)add(`${technical.qualified} symbols passed technical filters; the top ${technical.shortlist_limit} receive company-research slots, subject to the existing AI budget.`);
+  const batch=diagnostic.batch_review;
+  if(technical?.qualified!=null)add(batch?`${technical.qualified} symbols passed technical filters; AI compares the full pool before selecting up to ${technical.shortlist_limit} for detailed company research, subject to the existing budget.`:`${technical.qualified} symbols passed technical filters; the top ${technical.shortlist_limit} receive company-research slots, subject to the existing AI budget.`);
+  if(batch){
+    add(`Preliminary AI batch: ${batch.status} · ${batch.input_count} candidates supplied${batch.status==='complete'?' · '+batch.reviewed_count+' compared':''} · ${batch.cost==null?'Cost unavailable':'$'+Number(batch.cost).toFixed(4)}. This selects research priorities, not trade approvals.`);
+    if(batch.detail)add(batch.detail);
+    for(const pick of batch.picks||[])add(`${pick.ticker} · AI research priority · ${pick.reason} · Risk: ${pick.risk}`);
+  }
   for(const message of diagnostic.messages||[])add(message);
   for(const row of diagnostic.shortlist||[])add(`${row.ticker} · Technical shortlist score ${Number(row.score).toFixed(4)} · 20-day return ${row.return_20d==null?'unavailable':(row.return_20d*100).toFixed(2)+'%'} · versus SPY ${row.relative_strength==null?'unavailable':(row.relative_strength*100).toFixed(2)+' percentage points'}`);
   if(diagnostic.shortlist?.length)add(diagnostic.selection_rule);

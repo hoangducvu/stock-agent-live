@@ -34,3 +34,14 @@ assert(rendered.some(text=>text.includes('scanning · 3000/12000 symbols process
 assert(rendered.some(text=>text.includes('200 symbols passed technical filters; the top 3')));
 assert(rendered.some(text=>text.includes('Only 150 daily bars')));
 console.log('Research diagnostics: coverage exclusions, shortlist metrics, exact reasons and text-only rendering passed.');
+
+rendered.length=0;
+context.diagnostic={...context.diagnostic,
+ technical_screening:{qualified:124,shortlist_limit:3,rejections:[]},
+ batch_review:{status:'complete',input_count:124,reviewed_count:124,cost:.005,detail:'Preliminary comparison only',picks:[{ticker:'AAPL',reason:'Relative trend',risk:'Earnings unknown'}]}};
+vm.runInContext('renderResearchDiagnostics(diagnostic,container)',context);
+assert(rendered.some(line=>line.includes('124 candidates supplied')&&line.includes('124 compared')));
+assert(rendered.some(line=>line.includes('AAPL · AI research priority')));
+assert(rendered.some(line=>line.includes('not trade approvals')));
+assert(!rendered.some(line=>line.includes('the top 3 receive')));
+console.log('Batch diagnostics: full-pool comparison count, priorities and non-approval label passed.');

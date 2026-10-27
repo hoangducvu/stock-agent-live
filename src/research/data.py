@@ -35,6 +35,9 @@ class AlpacaResearchData:
         restrict coverage. Ordering only makes traversal and audit logs stable.
         """
         assets=self.get('/v2/assets',dict(status='active',asset_class='us_equity'))
+        import re
+        self.asset_metadata={a['symbol']:{'instrument_hint':'fund_name_match' if re.search(r'\b(etf|etn|fund|ishares)\b',(a.get('name') or ''),re.I) else 'unknown'}
+                             for a in assets if isinstance(a.get('symbol'),str)}
         return sorted({a['symbol'] for a in assets
                        if a.get('tradable') and a.get('status')=='active'
                        and a.get('class','us_equity')=='us_equity'
