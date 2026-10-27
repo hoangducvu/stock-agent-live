@@ -120,8 +120,14 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(result.json()['max_positions'],30)
         self.assertEqual(self.store.read()['starting_capital'],baseline)
         self.assertEqual(self.client.put('/api/workspace/settings',json={'max_positions':0}).status_code,422)
-        self.assertEqual(self.client.put('/api/workspace/settings',json={'buying_power_reserve_pct':0}).status_code,422)
-        self.assertEqual(self.client.put('/api/workspace/settings',json={'max_gross_exposure_pct':401}).status_code,422)
+        for preferences in ({'buying_power_reserve_pct':0},{'max_gross_exposure_pct':401}):
+            response=self.client.put('/api/workspace/settings',json=preferences)
+            self.assertEqual(response.status_code,200,response.text)
+            for name,value in preferences.items():self.assertEqual(self.store.read()[name],value)
+        self.assertEqual(self.store.read()['starting_capital'],baseline)
+        self.assertEqual(self.store.read()['max_daily_loss_pct'],2)
+        for reserve in (-1,100):
+            self.assertEqual(self.client.put('/api/workspace/settings',json={'buying_power_reserve_pct':reserve}).status_code,422)
 
     def test_settings_cannot_change_while_running(self):
         from backend.main import runtime
