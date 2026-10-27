@@ -109,24 +109,27 @@ def _setting(name, default, minimum, maximum):
     if not _math.isfinite(value) or not minimum <= value <= maximum:
         raise ValueError('Invalid dashboard setting: ' + name)
     return value
-MAX_ORDER_VALUE = _setting('MAX_ORDER_VALUE', MAX_ORDER_VALUE, 1, 10000)
-MAX_POSITION_PCT = _setting('MAX_POSITION_PCT', MAX_POSITION_PCT, .001, .10)
+MAX_ORDER_VALUE = _setting('MAX_ORDER_VALUE', MAX_ORDER_VALUE, 0, float('inf'))
+MAX_POSITION_PCT = _setting('MAX_POSITION_PCT', MAX_POSITION_PCT, 0, 1)
 MAX_DAILY_LOSS_PCT = _setting('MAX_DAILY_LOSS_PCT', MAX_DAILY_LOSS_PCT, .001, .05)
-MAX_CONCURRENT_POSITIONS = int(_setting('MAX_POSITIONS', MAX_CONCURRENT_POSITIONS, 1, 50))
-STARTING_CAPITAL = _setting('STARTING_CAPITAL', STARTING_CAPITAL, 10, 1000000)
-HALT_THRESHOLD_VALUE = _setting('HALT_EQUITY', HALT_THRESHOLD_VALUE, 0, 1000000)
+MAX_CONCURRENT_POSITIONS = int(_setting('MAX_POSITIONS', MAX_CONCURRENT_POSITIONS, 1, float('inf')))
+STARTING_CAPITAL = _setting('STARTING_CAPITAL', STARTING_CAPITAL, 0, float('inf'))
+HALT_THRESHOLD_VALUE = _setting('HALT_EQUITY', HALT_THRESHOLD_VALUE, 0, float('inf'))
 if HALT_THRESHOLD_VALUE >= STARTING_CAPITAL:
     raise ValueError('Equity halt must be below reference capital')
 
 # Adaptive intraday exits. Checked by the existing five-minute engine cycle.
-SCALP_MAX_HOLD_MINUTES = _setting('SCALP_MAX_HOLD_MINUTES', 30, 1, 240)
+SCALP_MAX_HOLD_MINUTES = _setting('SCALP_MAX_HOLD_MINUTES', 30, 1, float('inf'))
 SCALP_STOP_ATR = _setting('SCALP_STOP_ATR', 1.5, .1, 10)
 SCALP_TRAIL_ACTIVATE_ATR = _setting('SCALP_TRAIL_ACTIVATE_ATR', 1.0, .1, 10)
 SCALP_TRAIL_ATR = _setting('SCALP_TRAIL_ATR', .75, .1, 10)
 
-POSITION_SIZE_MULTIPLIER = _setting('POSITION_SIZE_MULTIPLIER', 1, 1, 20)
+POSITION_SIZE_MULTIPLIER = _setting('POSITION_SIZE_MULTIPLIER', 1, 0, float('inf'))
 
 ALLOCATION_MODE = _os.getenv('NEXLARA_ALLOCATION_MODE','percentage')
 if ALLOCATION_MODE not in {'percentage','fill_slots'}:raise ValueError('Invalid allocation mode')
-BUYING_POWER_RESERVE_PCT = _setting('BUYING_POWER_RESERVE_PCT',5,1,50)
-MAX_GROSS_EXPOSURE = _setting('MAX_GROSS_EXPOSURE_PCT',400,10,400)/100
+BUYING_POWER_RESERVE_PCT = _setting('BUYING_POWER_RESERVE_PCT',5,0,100)
+if BUYING_POWER_RESERVE_PCT>=100:raise ValueError('Buying-power reserve must be below 100%')
+MAX_GROSS_EXPOSURE = _setting('MAX_GROSS_EXPOSURE_PCT',400,0,float('inf'))/100
+
+INTRADAY_CLOSE_BUFFER_MINUTES = _setting('INTRADAY_CLOSE_BUFFER_MINUTES',30,5,float('inf'))

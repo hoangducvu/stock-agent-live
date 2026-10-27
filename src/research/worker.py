@@ -260,7 +260,7 @@ class ResearchWorker:
             from .schemas import Report
             overhead=len((SYSTEM+'\nJSON schema: '+canonical(Report.model_json_schema())).encode())+512
             size=len(canonical(dict(context={**context,'task':task,'model_name':self.config.model,'analysis_timestamp':now.isoformat()},snapshots=snapshots)).encode())
-            if overhead+size+min(2000 if self.config.prototype else 4000,self.config.tokens//3)<=self.config.tokens:
+            if overhead+size+self.ai.output_limit()<=self.config.tokens:
                 report=self.ai.evaluate(task,snapshots,context,now);break
             candidates.pop()
         if report is None:return False
@@ -362,7 +362,7 @@ class ResearchWorker:
             overhead=len((SYSTEM+'\nJSON schema: '+canonical(Report.model_json_schema())).encode())+512
             while batch:
                 snapshots={item['symbol']:item['fresh'] for item in batch}
-                total=overhead+len(canonical(dict(context={**context,'task':'entry','model_name':self.config.model,'analysis_timestamp':now.isoformat()},snapshots=snapshots)).encode())+min(2000 if self.config.prototype else 4000,self.config.tokens//3)
+                total=overhead+len(canonical(dict(context={**context,'task':'entry','model_name':self.config.model,'analysis_timestamp':now.isoformat()},snapshots=snapshots)).encode())+self.ai.output_limit()
                 if total<=self.config.tokens:break
                 batch.pop()
             if batch:

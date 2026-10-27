@@ -207,7 +207,7 @@ class RiskManager:
                 f"have {fmt_price(bp)}"
             )
 
-        if config.ALLOCATION_MODE=='fill_slots':
+        if config.ALLOCATION_MODE=='fill_slots' or os.getenv('NEXLARA_MANAGED_AI')=='true':
             try:
                 state=self._allocation_state(strategy)
                 if state['slots']<=0 or order_value>state['capacity']+1e-8:
@@ -228,6 +228,7 @@ class RiskManager:
         if account is None:raise RuntimeError('Account unavailable')
         positions=self.acct.get_open_positions()
         orders=self.acct.api.list_orders(status='open',limit=500)
+        if len(orders)>=500:raise RuntimeError('Open-order response may be truncated; reconcile before more entries')
         return allocation_capacity(account,positions,orders,strategy,config.MAX_CONCURRENT_POSITIONS,config.MAX_GROSS_EXPOSURE,config.BUYING_POWER_RESERVE_PCT)
 
     def calc_position_size(self, price: float, strategy=None) -> tuple:
@@ -245,7 +246,13 @@ class RiskManager:
             from allocation import allocation_budget
             try:dollars=allocation_budget(self._allocation_state(strategy),config.MAX_ORDER_VALUE)
             except Exception:return 0.0,0.0
-        if config.POSITION_SIZE_MULTIPLIER>1:
+        if config.ALLOCATION_MODE!='fill_slots' and os.getenv('NEXLARA_MANAGED_AI')=='true':
+            try:
+                state=self._allocation_state(strategy)
+                if state['slots']<=0:return 0.0,0.0
+                dollars=min(dollars,state['capacity'])
+            except Exception:return 0.0,0.0
+        if config.POSITION_SIZE_MULTIPLIER!=1:
             try:
                 state=self._allocation_state(strategy)
                 if state['slots']<=0:return 0.0,0.0

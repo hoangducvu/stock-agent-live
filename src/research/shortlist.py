@@ -13,7 +13,7 @@ class Pick(BaseModel):
 class Comparison(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)
     reviewed_count: int=Field(ge=0)
-    picks: list[Pick]=Field(max_length=5)
+    picks: list[Pick]
     summary: str=Field(max_length=500)
 
 # API-compatible basic schema; length and membership constraints are enforced locally.
@@ -52,7 +52,7 @@ class BatchShortlist:
         self.db.put('batch_shortlist_input',input_key,dict(payload=payload,columns=COLUMNS))
         cached=self.db.get('batch_shortlist_cache',self.scope+':'+digest)
         if cached:return save(**cached,cache_hit=True)
-        output=1200;system=SYSTEM+'\nJSON schema: '+canonical(SCHEMA)
+        output=self.config.batch_output_tokens;system=SYSTEM.replace('Rank up to 5 tickers',f'Rank up to {self.config.batch_priorities} tickers')+'\nJSON schema: '+canonical(SCHEMA)
         upper_input=len(system.encode())+len(payload.encode())+512
         if upper_input+output>self.config.tokens:
             return save(status='input_too_large',detail='The complete candidate table exceeds the request limit. No rows were silently omitted and no paid request was made.',input_bytes=upper_input)
@@ -79,7 +79,7 @@ class BatchShortlist:
             if reply.searches:raise ValueError('Comparison must not perform web searches')
             report=Comparison.model_validate_json(reply.text)
             available={r['ticker']:r for r in rows};tickers=[p.ticker for p in report.picks]
-            if report.reviewed_count!=len(rows) or len(tickers)!=len(set(tickers)) or not set(tickers)<=set(available):
+            if len(tickers)>self.config.batch_priorities or report.reviewed_count!=len(rows) or len(tickers)!=len(set(tickers)) or not set(tickers)<=set(available):
                 raise ValueError('Comparison coverage or membership mismatch')
             if any(available[s].get('instrument_hint')=='fund_name_match' for s in tickers):
                 raise ValueError('Fund selected for company-only research')

@@ -25,6 +25,12 @@ class ResearchConfig:
     max_positions: int = 3
     prototype: bool = False
     batch_review: bool = False
+    batch_priorities: int = 5
+    daily_searches: int = 6
+    company_output_tokens: int = 2400
+    batch_output_tokens: int = 1200
+    final_output_tokens: int = 0
+    postmarket_delay_minutes: int | None = None
     search_reserve_tokens: int = 20000
     company_cache_days: int = 7
     searches_per_company: int = 2
@@ -96,6 +102,22 @@ class ResearchConfig:
             c=replace(c,prototype=True,batch_review=flag('AI_BATCH_REVIEW_ENABLED', settings is not None),validation=False,candidates=3,
                       calls=min(c.calls,8),dollars=min(c.dollars,.20),
                       search_reserve_tokens=20000,company_cache_days=7,searches_per_company=2)
+        if settings is not None:
+            # Dashboard preferences override prototype defaults; never clamp them
+            # back to the old three-company/$0.20/six-search experiment.
+            mapping={'entry_start':'entry_start','opening_delay_minutes':'opening_minutes',
+                'ai_premarket_time':'premarket_time','ai_postmarket_delay_minutes':'postmarket_delay_minutes',
+                'ai_daily_call_limit':'calls','ai_daily_budget':'dollars','ai_request_token_limit':'tokens',
+                'ai_research_slots':'candidates','ai_batch_priority_limit':'batch_priorities',
+                'ai_searches_per_company':'searches_per_company','ai_daily_search_limit':'daily_searches',
+                'ai_company_output_tokens':'company_output_tokens','ai_batch_output_tokens':'batch_output_tokens',
+                'ai_final_output_tokens':'final_output_tokens','ai_cache_days':'company_cache_days',
+                'ai_cooldown_minutes':'cooldown_minutes','ai_min_price':'min_price',
+                'ai_min_dollar_volume':'min_dollar_volume','ai_rsi_min':'rsi_min','ai_rsi_max':'rsi_max'}
+            overrides={target:settings[source] for source,target in mapping.items() if source in settings}
+            if 'ai_min_relative_strength_pct' in settings:overrides['min_relative_strength']=settings['ai_min_relative_strength_pct']/100
+            if 'ai_max_atr_pct' in settings:overrides['max_atr_pct']=settings['ai_max_atr_pct']/100
+            c=replace(c,**overrides)
         from datetime import time
         for t in (c.premarket_time,c.postmarket_time,c.entry_start):time.fromisoformat(t)
         if c.rsi_min>c.rsi_max:raise ValueError('Invalid RSI range')

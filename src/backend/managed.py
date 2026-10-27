@@ -4,7 +4,7 @@ import math
 from pathlib import Path
 import httpx
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal, Optional
 from backend.settings_store import SettingsStore
 from strategy_catalog import CATALOG, IDS, SHORT_IDS
@@ -22,16 +22,16 @@ class Settings(BaseModel):
     strategies: Optional[list[str]] = None
     shorts_enabled: bool = True
     news_enabled: bool = True
-    position_size_multiplier: float = Field(default=10, ge=1, le=20, allow_inf_nan=False)
-    max_order_value: float = Field(default=10000, ge=1, le=10000, allow_inf_nan=False)
-    max_position_pct: float = Field(default=5, ge=.1, le=10, allow_inf_nan=False)
+    position_size_multiplier: float = Field(default=10, gt=0, allow_inf_nan=False)
+    max_order_value: float = Field(default=10000, gt=0, allow_inf_nan=False)
+    max_position_pct: float = Field(default=5, gt=0, le=100, allow_inf_nan=False)
     max_daily_loss_pct: float = Field(default=2, ge=.1, le=5, allow_inf_nan=False)
-    max_positions: int = Field(default=20, ge=1, le=50)
+    max_positions: int = Field(default=20, ge=1)
     allocation_mode: Literal['percentage','fill_slots'] = 'fill_slots'
-    buying_power_reserve_pct: float = Field(default=5,ge=1,le=50,allow_inf_nan=False)
-    max_gross_exposure_pct: float = Field(default=400,ge=10,le=400,allow_inf_nan=False)
-    starting_capital: float = Field(default=5000, ge=10, le=1000000, allow_inf_nan=False)
-    halt_equity: float = Field(default=4500, ge=0, le=1000000, allow_inf_nan=False)
+    buying_power_reserve_pct: float = Field(default=5,ge=0,lt=100,allow_inf_nan=False)
+    max_gross_exposure_pct: float = Field(default=400,gt=0,allow_inf_nan=False)
+    starting_capital: float = Field(default=5000, gt=0, allow_inf_nan=False)
+    halt_equity: float = Field(default=4500, ge=0, allow_inf_nan=False)
     ai_model: Optional[str] = Field(default=None,max_length=120)
     ai_enabled: bool = False
     ai_api_key: Optional[str] = Field(default=None, max_length=512)
@@ -39,6 +39,39 @@ class Settings(BaseModel):
     slack_webhook: Optional[str] = Field(default=None, max_length=512)
     slack_channel: str = Field(default='', max_length=80)
     close_on_stop: bool = True
+    entry_start: str = '10:00'
+    opening_delay_minutes: int = Field(default=30, ge=0)
+    intraday_close_buffer_minutes: int = Field(default=30, ge=5)
+    scalp_max_hold_minutes: float = Field(default=30, ge=1, allow_inf_nan=False)
+    ai_premarket_time: str = '08:30'
+    ai_postmarket_delay_minutes: int = Field(default=15, ge=0)
+    ai_daily_call_limit: int = Field(default=8, ge=0)
+    ai_daily_budget: float = Field(default=0.2, ge=0, allow_inf_nan=False)
+    ai_request_token_limit: int = Field(default=12000, ge=512)
+    ai_research_slots: int = Field(default=3, ge=1)
+    ai_batch_priority_limit: int = Field(default=5, ge=1)
+    ai_searches_per_company: int = Field(default=2, ge=0)
+    ai_daily_search_limit: int = Field(default=6, ge=0)
+    ai_company_output_tokens: int = Field(default=2400, ge=256)
+    ai_batch_output_tokens: int = Field(default=1200, ge=256)
+    ai_final_output_tokens: int = Field(default=2000, ge=256)
+    ai_cache_days: float = Field(default=7, ge=0, allow_inf_nan=False)
+    ai_cooldown_minutes: float = Field(default=30, ge=0, allow_inf_nan=False)
+    ai_min_price: float = Field(default=5, ge=0, allow_inf_nan=False)
+    ai_min_dollar_volume: float = Field(default=20000000, ge=0, allow_inf_nan=False)
+    ai_rsi_min: float = Field(default=35, ge=0, le=100, allow_inf_nan=False)
+    ai_rsi_max: float = Field(default=75, ge=0, le=100, allow_inf_nan=False)
+    ai_min_relative_strength_pct: float = Field(default=0, allow_inf_nan=False)
+    ai_max_atr_pct: float = Field(default=8, ge=0, allow_inf_nan=False)
+
+    @field_validator('entry_start','ai_premarket_time')
+    @classmethod
+    def valid_clock_time(cls,value):
+        import re
+        if not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',value):
+            raise ValueError('Use a New York clock time in HH:MM format')
+        return value
+
 
 async def broker(path, values, data=False, params=None):
     if not values.get('api_key') or not values.get('secret_key'):
@@ -156,6 +189,12 @@ async def save_settings(req: Settings):
                 ratio = previous['halt_equity'] / previous['starting_capital']
                 values['starting_capital'] = equity
                 values['halt_equity'] = round(equity * ratio, 2)
+        if values['ai_rsi_min']>values['ai_rsi_max']:
+            raise HTTPException(422,'Research RSI minimum must not exceed its maximum.')
+        if values['ai_research_slots']>values['ai_batch_priority_limit']:
+            raise HTTPException(422,'AI priorities must cover all detailed company research slots.')
+        if max(values['ai_batch_output_tokens'],values['ai_company_output_tokens'],values['ai_final_output_tokens'])>=values['ai_request_token_limit']:
+            raise HTTPException(422,'The request token allowance must exceed each output allowance and leave room for input.')
         if values['halt_equity'] >= values['starting_capital']:
             raise HTTPException(422, 'Equity halt must be below reference capital.')
         store.write(values)
@@ -265,7 +304,7 @@ async def readiness():
     if policy.enabled:
         check('AI provider configuration', bool(values.get('ai_api_key')), 'AI-dependent entries require a configured provider key; missing credentials block new entries.')
         if policy.prototype:
-            check('Prototype company research', True, 'One preliminary AI comparison of the complete technical pool, then up to three companies with two web searches each, seven-day cache and the existing $0.20/day estimated budget. Missing or unverified evidence blocks swing entries; scalping is independent of AI.', blocking=False)
+            check('Prototype company research', True, 'A preliminary AI comparison followed by detailed research within your saved slots, token, search and daily budget preferences. Missing or unverified evidence blocks swing entries; scalping is independent of AI.', blocking=False)
         elif policy.require_fundamentals or policy.require_earnings:
             evidence=os.getenv('AI_EVIDENCE_FILE','')
             check('Research evidence feed', bool(evidence and Path(evidence).is_file()), 'A dated fundamentals/earnings evidence feed must be available to the worker.')
@@ -326,7 +365,7 @@ async def research_status():
     return dict(enabled=config.enabled,provider=config.provider,model=config.model,
                 credentials_configured=bool(values.get('ai_api_key')),
                 prototype=config.prototype,batch_review=config.batch_review,daily_budget=config.dollars,max_candidates=config.candidates,
-                max_searches=6 if config.prototype else 0,cache_days=config.company_cache_days,
+                max_searches=config.daily_searches if config.prototype else 0,cache_days=config.company_cache_days,
                 evidence_configured=bool(__import__('os').getenv('AI_EVIDENCE_FILE') and Path(__import__('os').getenv('AI_EVIDENCE_FILE')).is_file()),
                 usage=db.usage(day),watchlist=db.get('watchlist',identity+':'+day) or {},
                 reports=reports,diagnostics=diagnostics,heartbeat=db.get('worker','heartbeat'),schedule=local_schedule(db,config))

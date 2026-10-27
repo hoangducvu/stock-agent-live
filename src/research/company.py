@@ -117,17 +117,21 @@ class CompanyResearch:
             if not new_news and not earnings_due and not moved:
                 self.db.event('company_cache_hit',key,{});return self.evidence.get(ticker,now)
             self.db.delete('company_research',key)
+        if self.config.searches_per_company == 0:
+            self.db.put('company_result',attempt,dict(ticker=ticker,day=day,status='blocked',searches=0,cost=0,
+                reason=dict(code='company_search_disabled',message='Web research is disabled by your search preference; no paid request was made.',details={})))
+            return None
         # At most one paid attempt per company per trading day, including failures.
         if self.db.get('company_attempt',attempt):return None
-        output=2400
-        system=COMPANY_SYSTEM+'\nSchema: '+canonical(CompanyReport.model_json_schema())
+        output=self.config.company_output_tokens
+        system=COMPANY_SYSTEM.replace('TWO web searches',str(self.config.searches_per_company)+' web searches')+'\nSchema: '+canonical(CompanyReport.model_json_schema())
         payload=canonical(dict(ticker=ticker,today=now.isoformat(),news=[{'headline':a.get('headline','')[:180],'source':a.get('url')} for a in articles[:3]]))
         reserve=(self.config.search_reserve_tokens*self.config.input_per_million+output*self.config.output_per_million)/1e6+self.config.searches_per_company*SEARCH_USD
-        reservation=self.db.reserve(day,reserve,self.config.calls,self.config.dollars,searches=self.config.searches_per_company,max_searches=6)
+        reservation=self.db.reserve(day,reserve,self.config.calls,self.config.dollars,searches=self.config.searches_per_company,max_searches=self.config.daily_searches)
         if reservation is None:
             self.db.event('budget_rejection',key,{'task':'company_research'})
             self.db.put('company_result',attempt,dict(ticker=ticker,day=day,status='blocked',searches=0,cost=0,
-                        reason=dict(code='research_budget_exhausted',message='The daily request, dollar, or six-search budget could not reserve this request; no paid request was made.',details=dict(required_reservation=reserve))))
+                        reason=dict(code='research_budget_exhausted',message='The daily request, dollar, or saved search budget could not reserve this request; no paid request was made.',details=dict(required_reservation=reserve))))
             return None
         self.db.put('company_attempt',attempt,True,now.timestamp()+86400)
         reply=None;cost=None
@@ -141,7 +145,7 @@ class CompanyResearch:
             if cost>reserve:self.db.event('budget_estimate_exceeded',reservation,dict(reserved=reserve,actual=cost))
             record=validate_company(reply,ticker,now)
             record['anchor_price']=price
-            self.db.put('company_research',key,dict(record=record,anchor_price=price,news_digest=digest,news_fingerprints=sorted(news_fingerprints)),now.timestamp()+self.config.company_cache_days*86400)
+            self.db.put('company_research',key,dict(record=record,anchor_price=price,news_digest=digest,news_fingerprints=sorted(news_fingerprints)),((now.astimezone(ET).replace(hour=0,minute=0,second=0,microsecond=0)+timedelta(days=1)).timestamp() if self.config.company_cache_days==0 else now.timestamp()+self.config.company_cache_days*86400))
             self.db.event('company_research_complete',key,dict(searches=reply.searches,cost=cost))
             self.db.put('company_result',attempt,dict(ticker=ticker,day=day,status='accepted',reason=None,
                         input_tokens=reply.input_tokens,output_tokens=reply.output_tokens,searches=reply.searches,cost=cost))

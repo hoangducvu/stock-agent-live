@@ -185,7 +185,7 @@ $('settings-form').addEventListener('submit',e=>{
     strategies:fields.getAll('strategies'), shorts_enabled:fields.has('shorts_enabled'), news_enabled:fields.has('news_enabled'),slack_notifications:fields.has('slack_notifications')};
   for(const [k,v] of fields){
     if(['strategies','shorts_enabled','news_enabled','slack_notifications'].includes(k))continue;
-    if(k==='slack_channel'||k==='allocation_mode'){body[k]=v.trim();}
+    if(k==='slack_channel'||k==='allocation_mode'||k==='entry_start'||k==='ai_premarket_time'){body[k]=v.trim();}
     else if(k==='api_key'||k==='secret_key'||k==='slack_webhook'){if(v.trim())body[k]=v.trim();}
     else body[k]=Number(v);
   }
@@ -217,7 +217,7 @@ async function loadResearch(){
   const research=await api('workspace/research');
   lastResearchRefresh=Date.now();
   $('ai-enabled').textContent=research.enabled?'Enabled':'Disabled';
-  $('ai-config').textContent=research.model+' · '+(!research.credentials_configured?'No AI key saved':research.prototype?'Prototype · $'+Number(research.daily_budget).toFixed(2)+'/day estimated budget · up to 6 searches':!research.evidence_configured?'Fundamentals/earnings feed missing':'Provider key saved');
+  $('ai-config').textContent=research.model+' · '+(!research.credentials_configured?'No AI key saved':research.prototype?'Prototype · $'+Number(research.daily_budget).toFixed(2)+'/day estimated budget · up to '+research.max_searches+' searches':!research.evidence_configured?'Fundamentals/earnings feed missing':'Provider key saved');
   const schedule=research.schedule;
   if(schedule?.market_open){const local=value=>new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:schedule.timezone}).format(new Date(value));$('ai-schedule-local').textContent=`${schedule.date} · Europe/Malta: Research ${local(schedule.premarket)} · US market opens ${local(schedule.market_open)} · Signal validation from ${local(schedule.entry_validation)} · Review ${local(schedule.postmarket)}. No automatic AI call at the open.`;}else{$('ai-schedule-local').textContent=schedule?.status||'Waiting for exchange calendar';}
   $('ai-calls').textContent=research.usage.calls;$('ai-cost').textContent='$'+Number(research.usage.cost).toFixed(4);

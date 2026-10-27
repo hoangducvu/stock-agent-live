@@ -188,12 +188,7 @@ def main():
         id="compute_orb",
     )
 
-    # Time stop: close intraday at 3:30 PM
-    scheduler.add_job(
-        time_stop_close, "cron",
-        day_of_week="mon-fri", hour=15, minute=30,
-        id="time_stop",
-    )
+    # Intraday flattening uses the configured broker-close buffer in trading_tick.
 
     # End of day: 4:00 PM summary
     scheduler.add_job(
@@ -371,12 +366,12 @@ def trading_tick():
     _check_exits()
 
     # Apply the broker close time so early-close sessions also flatten on time.
-    near_close = clock.next_close - now <= timedelta(minutes=30)
+    near_close = clock.next_close - now <= timedelta(minutes=config.INTRADAY_CLOSE_BUFFER_MINUTES)
     if near_close:
         time_stop_close()
 
     # ── Check for new entries (skip in last 30 min) ──
-    if (not near_close and now.time() < config.TIME_STOP and
+    if (not near_close and
             not risk_mgr.is_halted() and not risk_mgr.is_daily_halted()):
         _scan_entries()
 
@@ -795,7 +790,7 @@ def _sync_existing_positions():
 
 
 def time_stop_close():
-    """3:30 PM — close all intraday positions (EMA_VWAP and ORB)."""
+    """Close tracked intraday positions at the configured broker-close buffer."""
     if not api.get_clock().is_open:
         return
     log.info("=== INTRADAY TIME STOP ===")

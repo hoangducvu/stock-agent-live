@@ -526,3 +526,38 @@ This flow applies to the next scheduled premarket research run after deployment.
 Installing the code does not delete today's failed attempts, reset its AI budget,
 re-run already completed jobs or start the trading engine. Standalone mode can
 opt into this flow with `AI_PROTOTYPE_MODE=true` and `AI_BATCH_REVIEW_ENABLED=true`.
+
+
+### Editable experimentation preferences (schema 6)
+
+Settings now exposes sizing, schedules and research preferences without the old
+prototype ceilings. Existing saved sizing and risk values are retained; new
+controls default to the previous behavior. Saving preferences requires an inactive
+engine. Values apply on the next engine start and worker reload. They do not
+reset daily risk baselines, cost ledgers, completed research jobs or attempt history.
+
+- Sizing: editable order value, fractional size multiplier, position count,
+  percentage allocation (up to 100%), zero-to-less-than-100% buying-power buffer,
+  and a gross exposure ceiling. There is no app maximum for positive finite
+  order values, multipliers, position counts, exposure or reference capital.
+  Fresh broker buying power and broker leverage still bound actual allocation.
+- Timing: earliest entry clock time and delay after open; premarket research time;
+  postmarket review delay; maximum scalp hold; and intraday flattening buffer.
+  Clock fields use New York time. Broker sessions and early closes remain
+  authoritative. The five-minute engine cycle requires a buffer of at least five
+  minutes. The old fixed 15:30 entry cutoff/cron flatten is removed in favor of
+  the configured broker-close buffer.
+- Research: editable daily dollar/call/search limits, searches per company,
+  company slots, preliminary priorities, comparison input/output allowance,
+  per-stage output tokens, cache duration and screening thresholds. Saved settings
+  override the old three-company/$0.20/six-search prototype clamps. The priorities
+  count must cover company slots; output allowances must leave room for input.
+  Company cache 0 retains same-day validated evidence but prevents cross-day reuse.
+  Search count 0 blocks uncached web research without making a paid request.
+  Provider/context limits still apply. Web-search context is charged through the
+  existing conservative reservation/actual-usage ledger; the editable comparison
+  input/output allowance bounds the preliminary and final comparison prompts.
+
+Daily-loss and equity-halt checks, protective exits, verified financial/earnings
+requirements, broker permissions, order validation, idempotency and paper-only
+execution remain active. This change does not bypass approvals or start trading.

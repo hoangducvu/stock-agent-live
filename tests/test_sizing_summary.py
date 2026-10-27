@@ -114,7 +114,7 @@ class SummaryApiTests(unittest.TestCase):
                         response=await client.get('/api/workspace/daily-summary')
                         self.assertEqual(response.status_code,200)
                         self.assertIsNone(response.json()['report'])
-                        response=await client.put('/api/workspace/settings',json={'position_size_multiplier':21})
+                        response=await client.put('/api/workspace/settings',json={'position_size_multiplier':0})
                         self.assertEqual(response.status_code,422)
                         response=await client.put('/api/workspace/settings',json={'position_size_multiplier':10,'max_order_value':10000})
                         self.assertEqual(response.status_code,200)

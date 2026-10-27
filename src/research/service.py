@@ -11,6 +11,8 @@ def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':')
 def fingerprint(value):return hashlib.sha256(canonical(value).encode()).hexdigest()
 class AIService:
     def __init__(self,db,config,provider):self.db=db;self.config=config;self.provider=provider
+    def output_limit(self):
+        return self.config.final_output_tokens or min(2000 if self.config.prototype else 4000,self.config.tokens//3)
     def evaluate(self,task,snapshots,context,now=None):
         now=now or datetime.now(timezone.utc);day=now.astimezone(ET).date().isoformat()
         if not self.config.enabled:return None
@@ -23,7 +25,7 @@ class AIService:
         # are served from cache; rejected/failed calls are throttled as well.
         cooldown=self.db.get('cooldown',key,now.timestamp())
         if cooldown:return None
-        output=min(2000 if self.config.prototype else 4000,self.config.tokens//3)
+        output=self.output_limit()
         system=SYSTEM+'\nJSON schema: '+canonical(Report.model_json_schema())
         payload=canonical(dict(context={**context,'analysis_timestamp':now.isoformat()},snapshots=snapshots))
         # UTF-8 bytes upper-bound text tokens; reserve extra protocol overhead.

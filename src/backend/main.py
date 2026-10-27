@@ -414,6 +414,10 @@ async def bot_start(req: BotStartRequest):
     risk_id = hashlib.sha256(('paper:' + (settings.get('paper_account_id') or req.api_key)).encode()).hexdigest()[:24]
     env.update({
         'NEXLARA_RISK_STATE': str(Path(__file__).parent.parent / 'data' / ('risk-' + risk_id + '.json')),
+        'ENTRY_EVALUATION_START': settings['entry_start'],
+        'AI_OPENING_RESTRICTION_MINUTES': str(settings['opening_delay_minutes']),
+        'NEXLARA_INTRADAY_CLOSE_BUFFER_MINUTES': str(settings['intraday_close_buffer_minutes']),
+        'NEXLARA_SCALP_MAX_HOLD_MINUTES': str(settings['scalp_max_hold_minutes']),
         'NEXLARA_POSITION_SIZE_MULTIPLIER': str(settings['position_size_multiplier']),
         'NEXLARA_MAX_ORDER_VALUE': str(settings['max_order_value']),
         'NEXLARA_MAX_POSITION_PCT': str(settings['max_position_pct'] / 100),

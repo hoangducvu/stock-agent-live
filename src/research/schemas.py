@@ -19,7 +19,7 @@ class Recommendation(BaseModel):
     analysis_version: Literal['1']
 class Report(BaseModel):
     model_config=ConfigDict(extra='forbid', strict=True)
-    recommendations: list[Recommendation]=Field(max_length=15)
+    recommendations: list[Recommendation]
     summary: str=Field(max_length=1500)
 
 def validate_report(raw,task,snapshots,model,now):

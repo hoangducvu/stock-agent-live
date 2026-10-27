@@ -13,7 +13,7 @@ class Session:
         pre=datetime.combine(day,time.fromisoformat(config.premarket_time),ET)
         configured=datetime.combine(day,time.fromisoformat(config.postmarket_time),ET)
         normal_close=datetime.combine(day,time(16),ET)
-        delay=max(configured-normal_close,timedelta(minutes=15))
+        delay=(timedelta(minutes=config.postmarket_delay_minutes) if config.postmarket_delay_minutes is not None else max(configured-normal_close,timedelta(minutes=15)))
         post=self.closing+delay
         entry=max(self.opening+timedelta(minutes=config.opening_minutes),datetime.combine(day,time.fromisoformat(config.entry_start),ET))
         # Explicitly setting both restrictions to market-open enables early entries.

@@ -7,7 +7,7 @@ const start=source.indexOf("$('settings-form').addEventListener('submit',");
 const end=source.indexOf("\n$('check').onclick",start);
 assert(start>=0&&end>start);
 let handler, pending, sent;
-const inputs=[['api_key','new-paper-key'],['secret_key','new-matching-secret'],['strategies','orb'],['strategies','news'],['news_enabled','on'],['slack_notifications','on'],['slack_channel','#trades'],['slack_webhook','https://hooks.slack.com/services/TEST/ONLY/FAKE'],['allocation_mode','fill_slots'],['buying_power_reserve_pct','5'],['max_gross_exposure_pct','400'],['max_order_value','10000'],['position_size_multiplier','10'],['max_position_pct','5'],['max_daily_loss_pct','2'],['max_positions','3'],['starting_capital','5000'],['halt_equity','4500']].map(([name,value])=>({name,value,disabled:false}));
+const inputs=[['api_key','new-paper-key'],['secret_key','new-matching-secret'],['strategies','orb'],['strategies','news'],['news_enabled','on'],['slack_notifications','on'],['slack_channel','#trades'],['slack_webhook','https://hooks.slack.com/services/TEST/ONLY/FAKE'],['allocation_mode','fill_slots'],['buying_power_reserve_pct','5'],['max_gross_exposure_pct','400'],['entry_start','09:30'],['ai_premarket_time','07:00'],['opening_delay_minutes','0'],['ai_daily_budget','10'],['ai_research_slots','20'],['max_order_value','10000'],['position_size_multiplier','10'],['max_position_pct','5'],['max_daily_loss_pct','2'],['max_positions','3'],['starting_capital','5000'],['halt_equity','4500']].map(([name,value])=>({name,value,disabled:false}));
 const form={elements:Object.fromEntries(inputs.map(i=>[i.name,i])),addEventListener:(name,callback)=>handler=callback};
 class BrowserFormData{
  constructor(target){this.rows=inputs.filter(i=>!i.disabled).map(i=>[i.name,i.value]);}
@@ -25,6 +25,11 @@ await pending;
 assert.equal(sent.api_key,'new-paper-key');
 assert.equal(sent.secret_key,'new-matching-secret');
 assert.deepEqual(sent.strategies,['orb','news']);
+assert.equal(sent.entry_start,'09:30');
+assert.equal(sent.ai_premarket_time,'07:00');
+assert.equal(sent.opening_delay_minutes,0);
+assert.equal(sent.ai_daily_budget,10);
+assert.equal(sent.ai_research_slots,20);
 assert.equal(sent.max_position_pct,5);
 assert.equal(sent.max_order_value,10000);
 assert.equal(sent.position_size_multiplier,10);

@@ -119,7 +119,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(result.status_code,200)
         self.assertEqual(result.json()['max_positions'],30)
         self.assertEqual(self.store.read()['starting_capital'],baseline)
-        self.assertEqual(self.client.put('/api/workspace/settings',json={'max_positions':51}).status_code,422)
+        self.assertEqual(self.client.put('/api/workspace/settings',json={'max_positions':0}).status_code,422)
         self.assertEqual(self.client.put('/api/workspace/settings',json={'buying_power_reserve_pct':0}).status_code,422)
         self.assertEqual(self.client.put('/api/workspace/settings',json={'max_gross_exposure_pct':401}).status_code,422)
 
