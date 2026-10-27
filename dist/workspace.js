@@ -71,9 +71,9 @@ async function loadDailySummary(force=false){
     const report=result.report;
     if(!report){$('daily-summary').textContent=result.detail;return;}
     if(report.account_id!==account)return;
-    $('summary-date').textContent=report.date+' · Eastern Time';
+    $('summary-date').textContent=report.date+' · Current paper account · Eastern Time';
     $('daily-summary').textContent='Closing equity '+money(report.closing_equity)+' · Account P&L '+money(report.account_pnl)+' · '+report.filled_orders+' filled orders · '+report.fills+' fills · Buy volume '+money(report.buy_volume)+' · Sell volume '+money(report.sell_volume);
-    $('summary-detail').textContent=report.detail;
+    $('summary-detail').textContent=report.detail+' Reports follow the currently connected paper account. Changing accounts changes the displayed history.';
   }catch(error){if(account===settings.paper_account_id)$('summary-detail').textContent='Summary refresh unavailable. '+error.message;}
 }
 
@@ -201,13 +201,13 @@ $('settings-form').addEventListener('submit',e=>{
 });
 
 $('check').onclick=()=>action(async()=>{await checkReadiness();notice(ready?'Readiness checks passed. No orders were submitted.':'Some checks need attention. Review the details below.',!ready);});
-$('refresh').onclick=()=>action(async()=>{await loadStatus();if(settings.credentials_saved){await checkReadiness();await Promise.all([loadAccountSnapshot(),loadEquityHistory(true)]);}});
+$('refresh').onclick=()=>action(async()=>{await loadStatus();if(settings.credentials_saved){await Promise.all([checkReadiness(),loadAccountSnapshot(),loadEquityHistory(true),loadDailySummary(true)]);}});
 $('start').onclick=()=>action(async()=>{if(!confirm('Start the paper engine with your saved settings? It can submit simulated orders during market hours.'))return;await api('workspace/start',{method:'POST'});await loadStatus();notice('Paper engine launched. Watch Engine activity for startup validation and scheduler readiness.');});
 $('stop').onclick=()=>action(async()=>{if(!confirm('Stop the paper engine? It will cancel orders and attempt to close positions. Verify the final state in Alpaca.'))return;await api('workspace/stop',{method:'POST'});await loadStatus();await checkReadiness();notice('Engine stopped. Review broker positions and pending orders in Readiness.');});
 tab(location.hash.slice(1));
 $('equity-period').onchange=()=>{equityHistory=null;historyRequest++;renderEquity();loadEquityHistory(true);};
 window.addEventListener('resize',()=>{if(!$('overview').hidden)renderEquity();});
-await action(async()=>{await loadSettings();await loadStatus();if(settings.credentials_saved){await checkReadiness();await Promise.all([loadAccountSnapshot(),loadEquityHistory(true)]);}});
+await action(async()=>{await loadSettings();await loadStatus();if(settings.credentials_saved){await Promise.all([checkReadiness(),loadAccountSnapshot(),loadEquityHistory(true),loadDailySummary(true)]);}});
 setInterval(refreshWorkspace,5000);
 setInterval(()=>{if(settings.credentials_saved&&!busy&&!pollBusy&&!document.hidden&&!$('readiness').hidden)action(checkReadiness);},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshWorkspace();});

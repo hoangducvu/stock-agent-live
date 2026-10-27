@@ -40,7 +40,7 @@ def explain_entry(symbol: str, strategy: str, side: str, price: float,
         f"  Take-Profit:   {fmt_price(take_profit) if take_profit else 'N/A'}",
         f"  Confidence:    {conf_str}",
         f"  Risk:          {fmt_price(risk_dollars)} ({fmt_pct(risk_pct)} of portfolio)",
-        f"  PDT Count:     {pdt_count}/{config.PDT_MAX_DAY_TRADES}",
+        f"  Round trips:     {pdt_count} (informational)",
         f"  Buying Power:  {fmt_price(buying_power)} remaining",
     ]
 

@@ -86,9 +86,9 @@ def get_applicable_strategies(symbol: str, daily_row, gap_pct: float = 0.0,
 
     # ── PDT override: swing only ──
     if not can_day_trade:
-        out = [("RSI_BOUNCE", "PDT limit — swing long only")]
+        out = [("RSI_BOUNCE", "Intraday broker eligibility unavailable — swing long")]
         if shorts_enabled:
-            out.append(("RSI_FADE", "PDT limit — swing short available"))
+            out.append(("RSI_FADE", "Intraday broker eligibility unavailable — swing short"))
         return filter_enabled(out)
 
     out = []

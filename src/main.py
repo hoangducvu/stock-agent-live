@@ -265,12 +265,12 @@ def pre_market_prep():
     # fill/cancel/stop lifecycle as all other entries. No pre-market orders.
     # Print daily briefing
     pdt_count = acct_mgr.get_day_trade_count()
-    mode = "SWING ONLY (PDT)" if pdt_count >= config.PDT_MAX_DAY_TRADES else "FULL"
+    mode = "FULL" if acct_mgr.can_day_trade() else "INTRADAY BLOCKED BY BROKER STATUS/BP"
 
     print(f"  Universe:      {len(scan_symbols)} symbols "
           f"(intraday={len(universe.intraday_symbols())}, swing={len(universe.swing_symbols())})")
     print(f"  Portfolio:     {fmt_price(portfolio_value)}")
-    print(f"  PDT Status:    {pdt_count}/{config.PDT_MAX_DAY_TRADES}")
+    print(f"  Recent round trips: {pdt_count} (informational)")
     print(f"  Strategy Mode: {mode}")
     print(f"  Gaps: {data_feed._notable_gaps()}")
     separator()
@@ -832,8 +832,7 @@ def end_of_day_summary():
     print(f"  Cumulative:      {fmt_pct(cumulative_return)}")
     print(f"  Trades Today:    {len(trades)} "
           f"({len(wins)} wins, {len(losses)} losses)")
-    print(f"  PDT Status:      "
-          f"{acct_mgr.get_day_trade_count()}/{config.PDT_MAX_DAY_TRADES}")
+    print(f"  Recent round trips: {acct_mgr.get_day_trade_count()} (informational)")
 
     if trades:
         win_rate = len(wins) / len(trades) * 100
@@ -922,7 +921,8 @@ def _write_state():
             "buying_power": acct_mgr.get_buying_power(),
             "daily_pnl": round(risk_mgr.get_daily_pnl(), 2),
             "pdt_count": acct_mgr.get_day_trade_count(),
-            "pdt_limit": config.PDT_MAX_DAY_TRADES,
+            "pdt_limit": None,
+            "intraday_policy": "broker_margin",
             "halted": risk_mgr.is_halted() or risk_mgr.is_daily_halted(),
             "open_positions": positions,
             "trades_today": trades,

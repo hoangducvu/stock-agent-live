@@ -54,7 +54,7 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 await vm.runInContext('refreshWorkspace()',context);
 assert.equal(get('equity').textContent,'$5100.00');
 assert(get('daily-summary').textContent.includes('Account P&L $50.00'));
-assert.equal(get('summary-date').textContent,'2026-10-26 · Eastern Time');
+assert.equal(get('summary-date').textContent,'2026-10-26 · Current paper account · Eastern Time');
 assert.equal(get('buying-power').textContent,'$12000.00');
 assert.equal(positions[0].symbol,'META');
 assert.equal(get('orders').children[0].cells[4].textContent,'filled');

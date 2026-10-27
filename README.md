@@ -472,3 +472,17 @@ and [account activities documentation](https://docs.alpaca.markets/us/docs/accou
 Runtime account data, credentials, logs and deployment backups are excluded
 from Git. To rotate the HTTPS password, `https/change-password.sh` now prompts
 securely instead of embedding a deployment password in source.
+
+
+### Intraday eligibility and account history
+
+Intraday eligibility follows fresh broker account status and positive finite
+buying power. Local round-trip counts are informational and no longer enforce
+the retired three-trades/five-days restriction. Broker order rejection, margin
+capacity, order caps, daily loss and equity halts still apply. Alpaca documents
+the change in its [current intraday margin guide](https://docs.alpaca.markets/us/docs/the-intraday-margin-rule)
+and [July 6, 2026 API changelog](https://docs.alpaca.markets/us/changelog/2026-07-06-pdt-db49dba).
+Informational round-trip logs are now scoped to the broker account; the old
+unscoped `pdt_day_trades.json` is retained on disk and is not imported into a
+new account. Historical broker closing summaries remain scoped to the selected
+paper account; changing accounts intentionally changes the displayed history.

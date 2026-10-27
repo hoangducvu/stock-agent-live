@@ -1,8 +1,10 @@
 """
-Account Manager — Alpaca account checks, PDT day-trade tracking,
+Account Manager — Alpaca account checks, informational round-trip history,
 position queries, and startup validation.
 """
 import json
+import hashlib
+import math
 import os
 from datetime import datetime, timedelta
 from collections import deque
@@ -10,11 +12,9 @@ from logger_setup import get_logger
 import config
 from utils import now_et, fmt_price, green, red, yellow, bold
 
-PDT_LOG_FILE = os.path.join(config.DATA_DIR, "pdt_day_trades.json")
-
 
 class AccountManager:
-    """Manages Alpaca account state, PDT tracking, and position queries."""
+    """Manages Alpaca account state, round-trip history, and position queries."""
 
     def __init__(self, api):
         """
@@ -23,6 +23,15 @@ class AccountManager:
         """
         self.api = api
         self.log = get_logger()
+        # Scope informational round-trip history to this broker account. The
+        # unscoped legacy file cannot safely be attributed after a key change.
+        scope = os.getenv('NEXLARA_ACCOUNT_SCOPE')
+        if not scope:
+            account = self.get_account()
+            scope = getattr(account,'id',None) if account is not None else None
+        self._trade_history_path = (os.path.join(config.DATA_DIR,
+            'round-trips-'+hashlib.sha256(str(scope).encode()).hexdigest()[:24]+'.json')
+            if scope and scope != 'unconfigured' else None)
         # Day trade log: list of {"symbol": str, "date": "YYYY-MM-DD"}
         self._day_trades = self._load_pdt_log()
 
@@ -151,7 +160,7 @@ class AccountManager:
   Portfolio Value: {fmt_price(equity)}
   Buying Power:    {fmt_price(buying_power)}
   Open Positions:  {len(positions)}
-  Day Trades Used: {pdt_count}/{config.PDT_MAX_DAY_TRADES} (rolling 5-day)
+  Round Trips:     {pdt_count} recent engine-recorded (informational)
   Kill Switch:     {ks}
   Close on Stop:   {'YES' if close_on_shutdown else 'NO'}
   Max Order Size:  {fmt_price(config.MAX_ORDER_VALUE)}
@@ -162,8 +171,8 @@ class AccountManager:
 {'=' * 60}""")
 
         # Strategy mode
-        if pdt_count >= config.PDT_MAX_DAY_TRADES:
-            print(f"  Strategy Mode:   {yellow('SWING ONLY')} (PDT limit reached)")
+        if not self.can_day_trade():
+            print(f"  Strategy Mode:   {yellow('INTRADAY ENTRIES BLOCKED')} (broker status/buying power)")
         else:
             print(f"  Strategy Mode:   {green('ENABLED STRATEGIES')} {os.getenv('STRATEGIES') or os.getenv('STRATEGY', 'regime selection')}")
 
@@ -180,8 +189,8 @@ class AccountManager:
         self._day_trades.append({"symbol": symbol, "date": today})
         self._save_pdt_log()
         self.log.warning(
-            f"PDT: Day trade recorded for {symbol}. "
-            f"Count: {self.get_day_trade_count()}/{config.PDT_MAX_DAY_TRADES}"
+            f"Same-day round trip recorded for {symbol}. "
+            f"Recent count: {self.get_day_trade_count()} (informational)"
         )
 
     def get_day_trade_count(self):
@@ -193,15 +202,32 @@ class AccountManager:
         return count
 
     def can_day_trade(self):
-        """Check if we can still make day trades."""
-        return self.get_day_trade_count() < config.PDT_MAX_DAY_TRADES
+        """Use broker eligibility; legacy local trade counts never block entries.
+
+        Alpaca removed its PDT framework in July 2026. Margin, order capacity,
+        short eligibility and daily/equity loss limits remain independently checked.
+        """
+        account = self.get_account()
+        if account is None:
+            return False
+        try:
+            def field(name,default=None):
+                return account.get(name,default) if isinstance(account,dict) else getattr(account,name,default)
+            equity, buying_power = float(field('equity')), float(field('buying_power'))
+            return (field('status') == 'ACTIVE'
+                and not any(field(name,False) for name in
+                    ('trading_blocked','account_blocked','trade_suspended_by_user'))
+                and math.isfinite(equity) and equity > 0
+                and math.isfinite(buying_power) and buying_power > 0)
+        except (TypeError,ValueError):
+            return False
 
     def _load_pdt_log(self):
         """Load PDT day trade log from disk."""
         os.makedirs(config.DATA_DIR, exist_ok=True)
-        if os.path.exists(PDT_LOG_FILE):
+        if self._trade_history_path and os.path.exists(self._trade_history_path):
             try:
-                with open(PDT_LOG_FILE) as f:
+                with open(self._trade_history_path) as f:
                     data = json.load(f)
                 # Prune old entries (older than 10 days)
                 cutoff = (now_et() - timedelta(days=10)).strftime("%Y-%m-%d")
@@ -212,8 +238,9 @@ class AccountManager:
 
     def _save_pdt_log(self):
         """Persist PDT day trade log to disk."""
+        if not self._trade_history_path:return
         os.makedirs(config.DATA_DIR, exist_ok=True)
-        with open(PDT_LOG_FILE, "w") as f:
+        with open(self._trade_history_path, "w") as f:
             json.dump(self._day_trades, f, indent=2)
 
     # ─── Market Calendar ─────────────────────────────────────────────────
