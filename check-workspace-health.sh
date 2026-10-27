@@ -21,7 +21,8 @@ if settings:print('Sizing:',settings.get('position_size_multiplier'),'x; order c
 status=get('workspace/status')
 if status:
     state=status.get('state') or {}
-    print('Engine:',status.get('running'),'State timestamp:',state.get('timestamp'),'Risk halted:',state.get('halted'),'Intraday policy:',state.get('intraday_policy','old deployment'))
+    policy=state.get('intraday_policy') or ('not applicable - engine stopped' if not status.get('running') else 'not reported yet - waiting for engine state')
+    print('Engine:',status.get('running'),'State timestamp:',state.get('timestamp'),'Risk halted:',state.get('halted'),'Intraday policy:',policy)
 snapshot=get('workspace/account-snapshot')
 if snapshot:
     account=snapshot.get('account') or {};clock=snapshot.get('clock') or {}
